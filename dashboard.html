@@ -401,7 +401,34 @@
   /* Inline bar visualization inside a cell — a soft color bar sized to the
      percentage sits behind the value, so relative magnitude is scannable
      without reading every number. */
-  .cellval{padding:8px 10px;display:inline-block;white-space:nowrap;}
+  .cellval{padding:8px 18px;display:inline-block;white-space:nowrap;}
+  .table-with-insight{
+    display:flex;
+    gap:24px;
+    align-items:stretch;
+    flex-wrap:wrap;
+  }
+  .table-with-insight > table{ flex-shrink:0; }
+  .insight-panel{
+    flex:1;
+    min-width:220px;
+    background:var(--brand-tint);
+    border:1px solid var(--brand);
+    border-radius:10px;
+    padding:16px 18px;
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink);
+  }
+  .insight-panel .insight-title{
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--brand-deep);
+    margin-bottom:8px;
+  }
+  .insight-panel b{ color:var(--brand-deep); }
   .pct-pill{
     display:inline-block;
     padding:3px 9px;
@@ -700,6 +727,11 @@
   </div>
 
   <div class="card" style="margin-bottom:16px;">
+    <h3>Billing software usage — New Restaurant Leads, city-wise</h3>
+    <div style="overflow-x:auto;"><table class="excel-table" id="softwareListRest"></table></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
     <h3>Competitive Positioning — New Restaurant Leads</h3>
     <div class="legend-row">
       <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
@@ -736,17 +768,26 @@
 
     <div class="card" style="margin-bottom:16px;">
       <h3>Outlet Matrix</h3>
-      <div style="overflow-x:auto;"><table class="excel-table" id="summaryOutletMatrix"></table></div>
+      <div class="table-with-insight">
+        <div style="overflow-x:auto;"><table class="excel-table" id="summaryOutletMatrix"></table></div>
+        <div class="insight-panel" id="summaryOutletMatrixInsight"></div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
       <h3>Platform Presence</h3>
-      <div style="overflow-x:auto;"><table class="excel-table" id="summaryPlatform"></table></div>
+      <div class="table-with-insight">
+        <div style="overflow-x:auto;"><table class="excel-table" id="summaryPlatform"></table></div>
+        <div class="insight-panel" id="summaryPlatformInsight"></div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
       <h3>Total Live Restaurants</h3>
-      <div style="overflow-x:auto;"><table class="excel-table" id="summaryTotalLive"></table></div>
+      <div class="table-with-insight">
+        <div style="overflow-x:auto;"><table class="excel-table" id="summaryTotalLive"></table></div>
+        <div class="insight-panel" id="summaryTotalLiveInsight"></div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
@@ -757,12 +798,18 @@
         <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
         <span><span class="metric-dot" style="background:#8A8478;"></span>Not Answered</span>
       </div>
-      <div style="overflow-x:auto;"><table class="excel-table" id="summaryCompetitive"></table></div>
+      <div class="table-with-insight">
+        <div style="overflow-x:auto;"><table class="excel-table" id="summaryCompetitive"></table></div>
+        <div class="insight-panel" id="summaryCompetitiveInsight"></div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
       <h3>Software Usage Matrix</h3>
-      <table class="excel-table" id="summarySoftwareUsage"></table>
+      <div class="table-with-insight">
+        <table class="excel-table" id="summarySoftwareUsage"></table>
+        <div class="insight-panel" id="summarySoftwareUsageInsight"></div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
@@ -1590,6 +1637,28 @@ const SUMMARY_CITIES = ['Mumbai','Kolkata','Pune','Hyderabad','Delhi - NCR','Ban
 function renderSurveySummaryTab(grid){
   const data = parseSurveySummary(grid);
 
+  function pctNum(pctText){
+    return parseFloat((pctText||'0').replace('%','')) || 0;
+  }
+  function findBestWorstCity(rows, label, cities){
+    const row = rows.find(r => r.label === label);
+    if(!row) return null;
+    let best=null, worst=null;
+    cities.forEach(c => {
+      const raw = row.byCityPct[c];
+      if(!raw) return; // sheet never recorded a % here — skip rather than treat blank as 0
+      const p = pctNum(raw);
+      if(!best || p > best.p) best = {city:c, p};
+      if(!worst || p < worst.p) worst = {city:c, p};
+    });
+    if(!best || !worst) return null;
+    return {best, worst, row};
+  }
+  function setInsight(id, html){
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = `<div class="insight-title">What this means</div>${html}`;
+  }
+
   if(data.outletMatrix){
     renderCityRowsTable('summaryOutletMatrix', data.outletMatrix, SUMMARY_CITIES, [
       { key:'Total Outlets', display:'Total Outlets' },
@@ -1598,6 +1667,12 @@ function renderSurveySummaryTab(grid){
       { key:'Available Restaurant', display:'Available' },
       { key:'Visit Pending', display:'Visit Pending' },
     ], () => '#DD9A2E');
+
+    const bw = findBestWorstCity(data.outletMatrix, 'Restaurant Visit', SUMMARY_CITIES);
+    if(bw){
+      setInsight('summaryOutletMatrixInsight',
+        `<b>${bw.best.city}</b> has the highest survey coverage so far at <b>${bw.best.p}%</b> visited, while <b>${bw.worst.city}</b> lags furthest behind at just <b>${bw.worst.p}%</b> — the biggest opportunity to focus field effort on next.`);
+    }
   }
 
   if(data.zomato && data.swiggy){
@@ -1606,10 +1681,25 @@ function renderSurveySummaryTab(grid){
       { key:'Live on Zomato', display:'Live on Zomato' },
       { key:'Live on Swigyy', display:'Live on Swiggy' },
     ], () => '#1E6B67');
+
+    const z = findBestWorstCity(combined, 'Live on Zomato', SUMMARY_CITIES);
+    const s = findBestWorstCity(combined, 'Live on Swigyy', SUMMARY_CITIES);
+    if(z && s){
+      setInsight('summaryPlatformInsight',
+        `Zomato presence is strongest in <b>${z.best.city}</b> (${z.best.p}%) and weakest in <b>${z.worst.city}</b> (${z.worst.p}%). Swiggy follows a similar pattern — strongest in <b>${s.best.city}</b> (${s.best.p}%), weakest in <b>${s.worst.city}</b> (${s.worst.p}%).`);
+    }
   }
 
   if(data.totalLive){
     renderTotalLiveTable('summaryTotalLive', data.totalLive, SUMMARY_CITIES);
+
+    const freshRow = data.totalLive.find(r => r.label === 'New Restaurants');
+    if(freshRow){
+      let topCity = null, topVal = -1;
+      SUMMARY_CITIES.forEach(c => { const v = freshRow.byCity[c]||0; if(v>topVal){ topVal=v; topCity=c; } });
+      setInsight('summaryTotalLiveInsight',
+        `<b>${topCity}</b> added the most new restaurants this period (<b>${fmt(topVal)}</b>), contributing to <b>${fmt(freshRow.total)}</b> new restaurants across all cities combined.`);
+    }
   }
 
   if(data.competitive){
@@ -1624,6 +1714,14 @@ function renderSurveySummaryTab(grid){
       if(key.indexOf('Cloud')===0) return '#B44736';
       return '#8A8478';
     });
+
+    const pp = findBestWorstCity(data.competitive, 'Petpooja Presence', SUMMARY_CITIES);
+    const totalRow = data.competitive.find(r => r.label === 'Total');
+    if(pp && totalRow){
+      const overallPct = pct(pp.row.total, totalRow.total || 1);
+      setInsight('summaryCompetitiveInsight',
+        `Petpooja's presence is strongest in <b>${pp.best.city}</b> (${pp.best.p}%) and weakest in <b>${pp.worst.city}</b> (${pp.worst.p}%) — where Manual/Offline billing still dominates instead. Overall, Petpooja holds <b>${overallPct}%</b> share across all available restaurants surveyed so far.`);
+    }
   }
 
   if(data.softwareUsage){
@@ -1638,6 +1736,10 @@ function renderSurveySummaryTab(grid){
       html += '</tbody>';
       el.innerHTML = html;
     }
+    const byLabel = {};
+    data.softwareUsage.forEach(r => { byLabel[r.label] = r.pctText; });
+    setInsight('summarySoftwareUsageInsight',
+      `<b>Offline billing</b> (pen-and-paper style) is still the most common approach at <b>${byLabel['Offline']||'—'}</b>, ahead of <b>Cloud software</b> — which includes Petpooja — at <b>${byLabel['Cloud']||'—'}</b>. About <b>${byLabel['Not Answered']||'—'}</b> of restaurants surveyed declined to share their billing setup.`);
   }
 
   wireBillingDetailTable('summaryBillingExisting', 'summaryBillingExistingSelect', data.billingExisting);
@@ -1856,9 +1958,14 @@ function renderPlatformOverview(containerId, available, zomatoYes, swiggyYes){
   `;
 }
 
-function renderLeadsOverview(containerId, total){
+function renderLeadsOverview(containerId, rows){
+  const total = rows.length;
+  const zomato = rows.filter(r => (r['Live On Zomato']||'').trim().toLowerCase()==='yes').length;
+  const swiggy = rows.filter(r => (r['Live On Swiggy']||'').trim().toLowerCase()==='yes').length;
   document.getElementById(containerId).innerHTML = `
     <div class="stat total"><div class="n">${fmt(total)}</div><div class="l">Total new leads</div></div>
+    <div class="stat"><div class="n" style="color:var(--teal);">${fmt(zomato)} <span class="pct-pill" style="background:#1E6B6722;color:#1E6B67;">${pct(zomato,total||1)}%</span></div><div class="l">Live on Zomato</div></div>
+    <div class="stat"><div class="n" style="color:var(--teal);">${fmt(swiggy)} <span class="pct-pill" style="background:#1E6B6722;color:#1E6B67;">${pct(swiggy,total||1)}%</span></div><div class="l">Live on Swiggy</div></div>
   `;
 }
 
@@ -2041,11 +2148,11 @@ function buildTicker(survey, rest){
 // Same top-10 list as before, but broken out by city instead of only showing
 // the combined total — each city column's percentage is relative to that
 // city's own count of recorded (non-blank) software answers.
-function renderSoftwareUsageTable(survey){
-  const el = document.getElementById('softwareListSurvey');
+function renderSoftwareUsageTable(containerId, rows, softwareKey, cityKey){
+  const el = document.getElementById(containerId);
   if(!el) return;
 
-  const totalMap = countByExcludeBlank(survey, 'Ex Software');
+  const totalMap = countByExcludeBlank(rows, softwareKey);
   const grandTotal = Object.values(totalMap).reduce((a,b)=>a+b, 0);
   const top = topN(totalMap, 10);
   const labels = top.map(([label]) => label);
@@ -2055,10 +2162,10 @@ function renderSoftwareUsageTable(survey){
   CITY_ORDER.forEach(c => { cityAnswered[c] = 0; });
   labels.forEach(l => { byLabelCity[l] = {}; CITY_ORDER.forEach(c => byLabelCity[l][c] = 0); });
 
-  survey.forEach(r => {
-    const raw = (r['Ex Software'] || '').toString().trim();
+  rows.forEach(r => {
+    const raw = (r[softwareKey] || '').toString().trim();
     if(!raw || raw === '-') return;
-    const city = normalizeCity(r['Region']);
+    const city = normalizeCity(r[cityKey]);
     if(cityAnswered[city] === undefined) return; // city not in CITY_ORDER (e.g. junk/other)
     cityAnswered[city]++;
     if(byLabelCity[raw]) byLabelCity[raw][city]++;
@@ -2100,7 +2207,7 @@ function renderSurveySection(survey){
   renderPlatformOverview('platformOverviewSurvey', availYes, zomatoYes, swiggyYes);
 
   // Software usage — top 10, blanks/no-answer excluded entirely, broken out by city
-  renderSoftwareUsageTable(survey);
+  renderSoftwareUsageTable('softwareListSurvey', survey, 'Ex Software', 'Region');
 
   // City-wise table with percentages
   renderCityTableSurvey(survey);
@@ -2110,7 +2217,10 @@ function renderRestaurantSection(rest){
   document.getElementById('restCount').textContent = fmt(rest.length) + ' records';
 
   // Leads overview (no availability split in this sheet)
-  renderLeadsOverview('leadsOverviewRest', rest.length);
+  renderLeadsOverview('leadsOverviewRest', rest);
+
+  // Billing software usage, city-wise
+  renderSoftwareUsageTable('softwareListRest', rest, 'Existing Software Final', 'City');
 
   // New leads by city — a simple count per city, replacing the old
   // Single/Chain outlet-type chart with something more directly useful.
