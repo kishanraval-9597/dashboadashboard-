@@ -271,6 +271,12 @@
     border:1px solid var(--line);
     border-radius:12px;
     padding:16px 16px 14px;
+    box-shadow:0 1px 2px rgba(33,30,26,0.04), 0 4px 14px rgba(33,30,26,0.05);
+    transition:box-shadow .2s ease, transform .2s ease;
+  }
+  .kpi:hover{
+    box-shadow:0 2px 4px rgba(33,30,26,0.06), 0 10px 26px rgba(33,30,26,0.09);
+    transform:translateY(-1px);
   }
   .kpi .num{
     font-family:'Fraunces',serif;
@@ -328,6 +334,12 @@
     border:1px solid var(--line);
     border-radius:12px;
     padding:18px 18px 12px;
+    box-shadow:0 1px 2px rgba(33,30,26,0.04), 0 4px 14px rgba(33,30,26,0.05);
+    transition:box-shadow .2s ease, transform .2s ease;
+  }
+  .card:hover{
+    box-shadow:0 2px 4px rgba(33,30,26,0.06), 0 10px 26px rgba(33,30,26,0.09);
+    transform:translateY(-1px);
   }
   .card h3{
     font-size:13px;
@@ -440,8 +452,11 @@
     font-weight:700;
     font-size:32px;
     line-height:1;
-    color:var(--brand-deep);
     white-space:nowrap;
+    background:linear-gradient(155deg, var(--brand), var(--brand-deep));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
   }
   .insight-stat-label{
     font-size:12.5px;
@@ -483,6 +498,12 @@
     position:relative;
     overflow:hidden;
     border-top:4px solid var(--accent, var(--amber));
+    box-shadow:0 1px 2px rgba(33,30,26,0.04), 0 4px 14px rgba(33,30,26,0.05);
+    transition:box-shadow .2s ease, transform .2s ease;
+  }
+  .outlet-card:hover{
+    box-shadow:0 2px 4px rgba(33,30,26,0.06), 0 10px 26px rgba(33,30,26,0.09);
+    transform:translateY(-1px);
   }
   .outlet-card-head{
     display:flex;
@@ -704,7 +725,7 @@
       <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
       <span><span class="metric-dot" style="background:#DD9A2E;"></span>Manual/Offline (opportunity)</span>
       <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
-      <span><span class="metric-dot" style="background:#8A8478;"></span>Not Answered</span>
+      <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
     </div>
     <div style="overflow-x:auto;">
       <table class="excel-table" id="competitiveTable"></table>
@@ -766,10 +787,11 @@
       <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
       <span><span class="metric-dot" style="background:#DD9A2E;"></span>Manual/Offline (opportunity)</span>
       <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
-      <span><span class="metric-dot" style="background:#8A8478;"></span>Not Answered</span>
+      <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
     </div>
-    <div style="overflow-x:auto;">
-      <table class="excel-table" id="restCompetitiveTable"></table>
+    <div class="table-with-insight">
+      <div style="overflow-x:auto;"><table class="excel-table" id="restCompetitiveTable"></table></div>
+      <div class="insight-panel" id="restCompetitiveInsight"></div>
     </div>
     <div class="stat-note">Percentages are relative to total leads found in that city. Every row here is already a confirmed restaurant — there's no "available" filter to apply first.</div>
   </div>
@@ -825,7 +847,7 @@
         <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
         <span><span class="metric-dot" style="background:#DD9A2E;"></span>Manual/Offline (opportunity)</span>
         <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
-        <span><span class="metric-dot" style="background:#8A8478;"></span>Not Answered</span>
+        <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
       </div>
       <div class="table-with-insight">
         <div style="overflow-x:auto;"><table class="excel-table" id="summaryCompetitive"></table></div>
@@ -847,7 +869,10 @@
         <label for="summaryBillingExistingSelect">Show:</label>
         <select id="summaryBillingExistingSelect"></select>
       </div>
-      <div style="overflow-x:auto;"><table class="excel-table" id="summaryBillingExisting"></table></div>
+      <div class="table-with-insight">
+        <div style="overflow-x:auto;"><table class="excel-table" id="summaryBillingExisting"></table></div>
+        <div class="insight-panel" id="summaryBillingExistingInsight"></div>
+      </div>
     </div>
 
   </div>
@@ -893,7 +918,7 @@ const SURVEY_SUMMARY_GID = '1686804958';
 
 const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
 
-const PALETTE = ['#DD9A2E','#1E6B67','#B44736','#8A6DAB','#3F7EA6','#C98A56','#5B8A72','#A3A16E','#9C6B4E','#6E6E6E'];
+const PALETTE = ['#DD9A2E','#1E6B67','#B44736','#8A6DAB','#3F7EA6','#C98A56','#5B8A72','#A3A16E','#9C6B4E','#5C7A89'];
 
 let charts = {};
 let jsonpCounter = 0;
@@ -1488,7 +1513,7 @@ const METRIC_COLORS = {
   petpooja: '#1E6B67',
   manualOffline: '#DD9A2E',
   cloudCompetition: '#B44736',
-  notAnswered: '#8A8478',
+  notAnswered: '#6B6FA8',
 };
 
 // Renders a table cell with the value plus a small colored pill for the
@@ -1630,6 +1655,19 @@ function computeRestCompetitive(rest){
   return { byCity, grand };
 }
 
+function renderInsightBlock(id, statNum, statLabel, bullets){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.innerHTML = `
+    <div class="insight-title">📊 What this means</div>
+    <div class="insight-stat">
+      <span class="insight-stat-num">${statNum}</span>
+      <span class="insight-stat-label">${statLabel}</span>
+    </div>
+    <ul class="insight-list">${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+  `;
+}
+
 function renderRestCompetitive(rest){
   const { byCity: data, grand } = computeRestCompetitive(rest);
   const el = document.getElementById('restCompetitiveTable');
@@ -1656,6 +1694,23 @@ function renderRestCompetitive(rest){
 
   html += '</tbody>';
   el.innerHTML = html;
+
+  // Insight: which city leans most/least toward Petpooja among new leads
+  let bestCity = null, bestPct = -1, worstCity = null, worstPct = 101;
+  CITY_ORDER.forEach(c => {
+    if(!data[c].total) return; // skip cities with zero leads — no meaningful % there
+    const p = pct(data[c].petpooja, data[c].total);
+    if(p > bestPct){ bestPct = p; bestCity = c; }
+    if(p < worstPct){ worstPct = p; worstCity = c; }
+  });
+  if(bestCity){
+    const overallPct = pct(grand.petpooja, grand.total||1);
+    renderInsightBlock('restCompetitiveInsight', overallPct+'%',
+      `of new restaurant leads already use Petpooja`,
+      [`Strongest in <b>${bestCity}</b> (${bestPct}%).`,
+       worstCity && worstCity !== bestCity ? `Weakest in <b>${worstCity}</b> (${worstPct}%).` : `Consistent across cities with any leads so far.`,
+       `<b>${fmt(grand.manualOffline)}</b> leads still use Manual/Offline billing — the biggest conversion opportunity.`]);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1683,18 +1738,6 @@ function renderSurveySummaryTab(grid){
     if(!best || !worst) return null;
     return {best, worst, row};
   }
-  function renderInsightBlock(id, statNum, statLabel, bullets){
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.innerHTML = `
-      <div class="insight-title">📊 What this means</div>
-      <div class="insight-stat">
-        <span class="insight-stat-num">${statNum}</span>
-        <span class="insight-stat-label">${statLabel}</span>
-      </div>
-      <ul class="insight-list">${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
-    `;
-  }
 
   if(data.outletMatrix){
     renderCityRowsTable('summaryOutletMatrix', data.outletMatrix, SUMMARY_CITIES, [
@@ -1706,11 +1749,15 @@ function renderSurveySummaryTab(grid){
     ], () => '#DD9A2E');
 
     const bw = findBestWorstCity(data.outletMatrix, 'Restaurant Visit', SUMMARY_CITIES);
+    const pendingRow = data.outletMatrix.find(r => r.label === 'Visit Pending');
     if(bw){
+      const bullets = [
+        `<b>${bw.worst.city}</b> lags furthest behind at just <b>${bw.worst.p}%</b> visited.`,
+        `The biggest opportunity to focus field effort on next.`,
+      ];
+      if(pendingRow) bullets.push(`<b>${fmt(pendingRow.total)}</b> outlets remain unvisited across all cities combined.`);
       renderInsightBlock('summaryOutletMatrixInsight', bw.best.p+'%',
-        `<b>${bw.best.city}</b>'s visited rate — the highest of any city`,
-        [`<b>${bw.worst.city}</b> lags furthest behind at just <b>${bw.worst.p}%</b> visited.`,
-         `The biggest opportunity to focus field effort on next.`]);
+        `<b>${bw.best.city}</b>'s visited rate — the highest of any city`, bullets);
     }
   }
 
@@ -1727,7 +1774,8 @@ function renderSurveySummaryTab(grid){
       renderInsightBlock('summaryPlatformInsight', z.best.p+'%',
         `<b>${z.best.city}</b>'s Zomato presence — the strongest of any city`,
         [`Weakest Zomato presence: <b>${z.worst.city}</b> (${z.worst.p}%).`,
-         `Swiggy follows a similar pattern — strongest in <b>${s.best.city}</b> (${s.best.p}%), weakest in <b>${s.worst.city}</b> (${s.worst.p}%).`]);
+         `Swiggy follows a similar pattern — strongest in <b>${s.best.city}</b> (${s.best.p}%), weakest in <b>${s.worst.city}</b> (${s.worst.p}%).`,
+         `Overall: <b>${fmt(z.row.total)}</b> outlets live on Zomato, <b>${fmt(s.row.total)}</b> live on Swiggy.`]);
     }
   }
 
@@ -1735,12 +1783,14 @@ function renderSurveySummaryTab(grid){
     renderTotalLiveTable('summaryTotalLive', data.totalLive, SUMMARY_CITIES);
 
     const freshRow = data.totalLive.find(r => r.label === 'New Restaurants');
+    const availRow = data.totalLive.find(r => r.label === 'Available Restaurant');
     if(freshRow){
       let topCity = null, topVal = -1;
       SUMMARY_CITIES.forEach(c => { const v = freshRow.byCity[c]||0; if(v>topVal){ topVal=v; topCity=c; } });
+      const bullets = [`<b>${fmt(freshRow.total)}</b> new restaurants added across all cities combined.`];
+      if(availRow) bullets.push(`<b>${fmt(availRow.total)}</b> restaurants were already available before this round.`);
       renderInsightBlock('summaryTotalLiveInsight', fmt(topVal),
-        `New restaurants added in <b>${topCity}</b> — the most of any city`,
-        [`<b>${fmt(freshRow.total)}</b> new restaurants added across all cities combined.`]);
+        `New restaurants added in <b>${topCity}</b> — the most of any city`, bullets);
     }
   }
 
@@ -1754,24 +1804,28 @@ function renderSurveySummaryTab(grid){
       if(key.indexOf('Petpooja')===0) return '#1E6B67';
       if(key.indexOf('Manual')===0) return '#DD9A2E';
       if(key.indexOf('Cloud')===0) return '#B44736';
-      return '#8A8478';
+      return '#6B6FA8';
     });
 
     const pp = findBestWorstCity(data.competitive, 'Petpooja Presence', SUMMARY_CITIES);
+    const moRow = data.competitive.find(r => r.label === 'Manual Billling + Offline(menson , prime , aryan)');
     const totalRow = data.competitive.find(r => r.label === 'Total');
     if(pp && totalRow){
       const overallPct = pct(pp.row.total, totalRow.total || 1);
+      const bullets = [
+        `Strongest in <b>${pp.best.city}</b> (${pp.best.p}%).`,
+        `Weakest in <b>${pp.worst.city}</b> (${pp.worst.p}%) — where Manual/Offline billing still dominates instead.`,
+      ];
+      if(moRow) bullets.push(`Manual/Offline still holds <b>${pct(moRow.total, totalRow.total||1)}%</b> share overall — the single biggest opportunity for growth.`);
       renderInsightBlock('summaryCompetitiveInsight', overallPct+'%',
-        `Petpooja's overall share across all available restaurants surveyed so far`,
-        [`Strongest in <b>${pp.best.city}</b> (${pp.best.p}%).`,
-         `Weakest in <b>${pp.worst.city}</b> (${pp.worst.p}%) — where Manual/Offline billing still dominates instead.`]);
+        `Petpooja's overall share across all available restaurants surveyed so far`, bullets);
     }
   }
 
   if(data.softwareUsage){
     const el = document.getElementById('summarySoftwareUsage');
     if(el){
-      const colors = { 'Cloud':'#B44736', 'Offline':'#DD9A2E', 'Not Answered':'#8A8478', 'Other Local Software':'#6E6E6E' };
+      const colors = { 'Cloud':'#B44736', 'Offline':'#DD9A2E', 'Not Answered':'#6B6FA8', 'Other Local Software':'#5C7A89' };
       let html = '<thead><tr><th style="text-align:left;">Category</th><th>Share</th></tr></thead><tbody>';
       html += data.softwareUsage.map(r => {
         const color = colors[r.label] || '#DD9A2E';
@@ -1785,7 +1839,8 @@ function renderSurveySummaryTab(grid){
     renderInsightBlock('summarySoftwareUsageInsight', byLabel['Offline'] || '—',
       `of restaurants surveyed still use offline / pen-paper billing`,
       [`Cloud software (includes Petpooja): <b>${byLabel['Cloud']||'—'}</b>.`,
-       `Declined to share their billing setup: <b>${byLabel['Not Answered']||'—'}</b>.`]);
+       `Declined to share their billing setup: <b>${byLabel['Not Answered']||'—'}</b>.`,
+       `Other local/regional software: <b>${byLabel['Other Local Software']||'—'}</b>.`]);
   }
 
   wireBillingDetailTable('summaryBillingExisting', 'summaryBillingExistingSelect', data.billingExisting);
@@ -1805,21 +1860,36 @@ function wireBillingDetailTable(tableId, selectId, rows){
 
   function render(choice){
     let html = '<thead><tr><th style="text-align:left;">Software</th><th>Count</th><th style="text-align:left;">Type</th></tr></thead><tbody>';
+    let topLabel = null, topVal = -1, cloudTotal = 0, offlineTotal = 0, grandTotal = 0;
     rows.forEach(r => {
       const isTotalRow = r.label === 'Total';
       const val = choice === '__TOTAL__' ? r.total : (r.byCity[choice] || 0);
       const pctText = choice === '__TOTAL__' ? r.totalPct : (r.byCityPct[choice] || '');
-      const color = r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#DD9A2E' : '#8A8478');
+      const color = r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#DD9A2E' : '#6B6FA8');
       html += `<tr${isTotalRow ? ' class="total-row"' : ''}><td>${r.label}</td>`;
       if(isTotalRow){
         html += `<td class="cellval-plain">${fmt(val)}</td>`;
+        grandTotal = val;
       } else {
         html += barCellText(val, pctText, color);
+        if(r.label !== 'Declined to Share' && val > topVal){ topVal = val; topLabel = r.label; }
+        if(r.tag === 'Cloud') cloudTotal += val;
+        if(r.tag === 'Offline') offlineTotal += val;
       }
       html += `<td style="text-align:left;font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-soft);">${r.tag||''}</td></tr>`;
     });
     html += '</tbody>';
     table.innerHTML = html;
+
+    const insightEl = document.getElementById('summaryBillingExistingInsight');
+    if(insightEl && topLabel){
+      const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
+      renderInsightBlock('summaryBillingExistingInsight', pct(topVal, grandTotal||1)+'%',
+        `of restaurants use <b>${topLabel}</b> — the most common named software ${label}`,
+        [`Cloud software: <b>${pct(cloudTotal, grandTotal||1)}%</b>.`,
+         `Offline/manual software: <b>${pct(offlineTotal, grandTotal||1)}%</b>.`,
+         `Figures update automatically as you change the city above.`]);
+    }
   }
 
   sel.onchange = () => render(sel.value);
