@@ -30,7 +30,7 @@
     --ink:#211E1A;
     --ink-soft:#5D6B85;
     --line:#E1DBCC;
-    --amber:#DD9A2E;
+    --amber:#8F641D;
     --amber-deep:#B9761A;
     --teal:#1E6B67;
     --brick:#B44736;
@@ -283,6 +283,7 @@
     font-weight:600;
     font-size:28px;
     line-height:1.05;
+    text-shadow:0 1px 0 rgba(255,255,255,.8), 0 2px 3px rgba(33,30,26,.12);
   }
   .kpi .lbl{
     font-size:11.5px;
@@ -361,7 +362,7 @@
   /* Stat pair (visit / lead overview cards) */
   .stat-pair{display:flex;gap:22px;align-items:flex-end;padding-top:6px;}
   .stat-pair .stat{flex:1;}
-  .stat-pair .stat .n{font-family:'Fraunces',serif;font-weight:600;font-size:30px;line-height:1;}
+  .stat-pair .stat .n{font-family:'Fraunces',serif;font-weight:600;font-size:30px;line-height:1;text-shadow:0 1px 0 rgba(255,255,255,.8), 0 2px 3px rgba(33,30,26,.12);}
   .stat-pair .stat .l{font-size:11px;color:var(--ink-soft);margin-top:5px;text-transform:uppercase;letter-spacing:.03em;}
   .stat-pair .stat.total .n{color:var(--ink);}
   .stat-pair .stat.yes .n{color:var(--teal);}
@@ -457,6 +458,7 @@
     -webkit-background-clip:text;
     background-clip:text;
     color:transparent;
+    filter:drop-shadow(0 2px 3px rgba(33,30,26,.15));
   }
   .insight-stat-label{
     font-size:12.5px;
@@ -578,6 +580,7 @@
     font-size:44px;
     line-height:1;
     color:var(--accent, var(--brand));
+    text-shadow:0 1px 0 rgba(255,255,255,.8), 0 2px 4px rgba(33,30,26,.14);
   }
   .outlet-hero-label{
     font-size:12.5px;
@@ -650,6 +653,7 @@
   }
   .outlet-total-card .outlet-city{ color:#fff; }
   .outlet-total-card .outlet-total{ color:#D7E2EC; }
+  .outlet-total-card .outlet-hero-num{ text-shadow:0 1px 0 rgba(255,255,255,.15), 0 2px 5px rgba(0,0,0,.35); }
   .outlet-total-card .outlet-hero-label{ color:#D7E2EC; }
   .outlet-total-card .outlet-progress-legend{ color:#B7C6D6; }
   .outlet-total-card .outlet-progress-legend b{ color:#fff; }
@@ -766,7 +770,7 @@
   <div class="card" style="margin-bottom:16px;">
     <div class="legend-row">
       <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
-      <span><span class="metric-dot" style="background:#DD9A2E;"></span>Manual/Offline (opportunity)</span>
+      <span><span class="metric-dot" style="background:#8F641D;"></span>Manual/Offline (opportunity)</span>
       <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
       <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
     </div>
@@ -828,7 +832,7 @@
     <h3>Competitive Positioning — New Restaurant Leads</h3>
     <div class="legend-row">
       <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
-      <span><span class="metric-dot" style="background:#DD9A2E;"></span>Manual/Offline (opportunity)</span>
+      <span><span class="metric-dot" style="background:#8F641D;"></span>Manual/Offline (opportunity)</span>
       <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
       <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
     </div>
@@ -888,7 +892,7 @@
       <h3>Competitive Positioning</h3>
       <div class="legend-row">
         <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
-        <span><span class="metric-dot" style="background:#DD9A2E;"></span>Manual/Offline (opportunity)</span>
+        <span><span class="metric-dot" style="background:#8F641D;"></span>Manual/Offline (opportunity)</span>
         <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
         <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
       </div>
@@ -961,7 +965,7 @@ const SURVEY_SUMMARY_GID = '1686804958';
 
 const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
 
-const PALETTE = ['#DD9A2E','#1E6B67','#B44736','#8A6DAB','#3F7EA6','#C98A56','#5B8A72','#A3A16E','#9C6B4E','#5C7A89'];
+const PALETTE = ['#8F641D','#1E6B67','#B44736','#8A6DAB','#3F7EA6','#C98A56','#5B8A72','#A3A16E','#9C6B4E','#5C7A89'];
 
 let charts = {};
 let jsonpCounter = 0;
@@ -1471,7 +1475,7 @@ function renderAtAGlance(survey, rest){
 // needing to read the number: teal (strong), amber (progressing), brick (early stage).
 function progressTier(p){
   if(p >= 40) return '#1E6B67';
-  if(p >= 15) return '#DD9A2E';
+  if(p >= 15) return '#8F641D';
   return '#B44736';
 }
 
@@ -1554,7 +1558,7 @@ function renderOutletMatrix(survey, rest){
 // grey = unknown/no answer.
 const METRIC_COLORS = {
   petpooja: '#1E6B67',
-  manualOffline: '#DD9A2E',
+  manualOffline: '#8F641D',
   cloudCompetition: '#B44736',
   notAnswered: '#6B6FA8',
 };
@@ -1597,7 +1601,7 @@ function renderTotalLiveTable(containerId, metricRows, cities){
     const freshVal = fresh.byCity[city] || 0;
     html += `<tr><td>${city}</td>` +
       barCell(availVal, pct(availVal, totalVal || 1), '#1E6B67') +
-      barCell(freshVal, pct(freshVal, totalVal || 1), '#DD9A2E') +
+      barCell(freshVal, pct(freshVal, totalVal || 1), '#8F641D') +
       `<td class="cellval-plain">${fmt(totalVal)}</td>` +
       '</tr>';
   });
@@ -1623,7 +1627,7 @@ function renderCityRowsTable(containerId, metricRows, cities, metricSpecs, color
     metricSpecs.forEach(m => {
       const mrow = rowsByLabel[m.key];
       if(!mrow){ html += '<td>—</td>'; return; }
-      const color = colorFn ? colorFn(m.key) : '#DD9A2E';
+      const color = colorFn ? colorFn(m.key) : '#8F641D';
       html += barCellText(mrow.byCity[city] || 0, mrow.byCityPct[city] || '', color);
     });
     html += '</tr>';
@@ -1698,9 +1702,18 @@ function computeRestCompetitive(rest){
   return { byCity, grand };
 }
 
-function renderInsightBlock(id, statNum, statLabel, bullets){
+function renderInsightBlock(id, statNum, statLabel, bullets, rankTitle, rankItems){
   const el = document.getElementById(id);
   if(!el) return;
+  let rankHtml = '';
+  if(rankItems && rankItems.length){
+    rankHtml = `
+      <div class="insight-divider"></div>
+      <div class="insight-title">${rankTitle}</div>
+      <ul class="insight-ranked">
+        ${rankItems.map((r,i) => `<li><span class="insight-rank">${i+1}</span><span class="insight-rank-name">${r.name}</span><span class="insight-rank-val" style="color:${r.color||'var(--brand)'};">${r.value}</span></li>`).join('')}
+      </ul>`;
+  }
   el.innerHTML = `
     <div class="insight-title">📊 What this means</div>
     <div class="insight-stat">
@@ -1708,6 +1721,7 @@ function renderInsightBlock(id, statNum, statLabel, bullets){
       <span class="insight-stat-label">${statLabel}</span>
     </div>
     <ul class="insight-list">${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+    ${rankHtml}
   `;
 }
 
@@ -1748,11 +1762,17 @@ function renderRestCompetitive(rest){
   });
   if(bestCity){
     const overallPct = pct(grand.petpooja, grand.total||1);
+    const ranked = CITY_ORDER
+      .filter(c => data[c].total > 0)
+      .map(c => ({ name: c, sortVal: pct(data[c].petpooja, data[c].total) }))
+      .sort((a,b) => b.sortVal - a.sortVal)
+      .map(r => ({ name: r.name, value: r.sortVal+'%', color: '#1E6B67' }));
     renderInsightBlock('restCompetitiveInsight', overallPct+'%',
       `of new restaurant leads already use Petpooja`,
       [`Strongest in <b>${bestCity}</b> (${bestPct}%).`,
        worstCity && worstCity !== bestCity ? `Weakest in <b>${worstCity}</b> (${worstPct}%).` : `Consistent across cities with any leads so far.`,
-       `<b>${fmt(grand.manualOffline)}</b> leads still use Manual/Offline billing — the biggest conversion opportunity.`]);
+       `<b>${fmt(grand.manualOffline)}</b> leads still use Manual/Offline billing — the biggest conversion opportunity.`],
+      'Petpooja presence, cities with leads ranked', ranked);
   }
 }
 
@@ -1789,7 +1809,7 @@ function renderSurveySummaryTab(grid){
       { key:'Not Available Restaurant', display:'Not Available' },
       { key:'Available Restaurant', display:'Available' },
       { key:'Visit Pending', display:'Visit Pending' },
-    ], () => '#DD9A2E');
+    ], () => '#8F641D');
 
     const bw = findBestWorstCity(data.outletMatrix, 'Restaurant Visit', SUMMARY_CITIES);
     const pendingRow = data.outletMatrix.find(r => r.label === 'Visit Pending');
@@ -1799,8 +1819,14 @@ function renderSurveySummaryTab(grid){
         `The biggest opportunity to focus field effort on next.`,
       ];
       if(pendingRow) bullets.push(`<b>${fmt(pendingRow.total)}</b> outlets remain unvisited across all cities combined.`);
+      const ranked = SUMMARY_CITIES
+        .filter(c => bw.row.byCityPct[c])
+        .map(c => ({ name: c, value: bw.row.byCityPct[c], sortVal: pctNum(bw.row.byCityPct[c]) }))
+        .sort((a,b) => b.sortVal - a.sortVal)
+        .map(r => ({ name: r.name, value: r.value, color: '#8F641D' }));
       renderInsightBlock('summaryOutletMatrixInsight', bw.best.p+'%',
-        `<b>${bw.best.city}</b>'s visited rate — the highest of any city`, bullets);
+        `<b>${bw.best.city}</b>'s visited rate — the highest of any city`, bullets,
+        'Visited rate, all cities ranked', ranked);
     }
   }
 
@@ -1814,11 +1840,18 @@ function renderSurveySummaryTab(grid){
     const z = findBestWorstCity(combined, 'Live on Zomato', SUMMARY_CITIES);
     const s = findBestWorstCity(combined, 'Live on Swigyy', SUMMARY_CITIES);
     if(z && s){
+      const zomatoRow = z.row;
+      const ranked = SUMMARY_CITIES
+        .filter(c => zomatoRow.byCityPct[c])
+        .map(c => ({ name: c, value: zomatoRow.byCityPct[c], sortVal: pctNum(zomatoRow.byCityPct[c]) }))
+        .sort((a,b) => b.sortVal - a.sortVal)
+        .map(r => ({ name: r.name, value: r.value, color: '#1E6B67' }));
       renderInsightBlock('summaryPlatformInsight', z.best.p+'%',
         `<b>${z.best.city}</b>'s Zomato presence — the strongest of any city`,
         [`Weakest Zomato presence: <b>${z.worst.city}</b> (${z.worst.p}%).`,
          `Swiggy follows a similar pattern — strongest in <b>${s.best.city}</b> (${s.best.p}%), weakest in <b>${s.worst.city}</b> (${s.worst.p}%).`,
-         `Overall: <b>${fmt(z.row.total)}</b> outlets live on Zomato, <b>${fmt(s.row.total)}</b> live on Swiggy.`]);
+         `Overall: <b>${fmt(z.row.total)}</b> outlets live on Zomato, <b>${fmt(s.row.total)}</b> live on Swiggy.`],
+        'Zomato presence, all cities ranked', ranked);
     }
   }
 
@@ -1832,8 +1865,13 @@ function renderSurveySummaryTab(grid){
       SUMMARY_CITIES.forEach(c => { const v = freshRow.byCity[c]||0; if(v>topVal){ topVal=v; topCity=c; } });
       const bullets = [`<b>${fmt(freshRow.total)}</b> new restaurants added across all cities combined.`];
       if(availRow) bullets.push(`<b>${fmt(availRow.total)}</b> restaurants were already available before this round.`);
+      const ranked = SUMMARY_CITIES
+        .map(c => ({ name: c, sortVal: freshRow.byCity[c] || 0 }))
+        .sort((a,b) => b.sortVal - a.sortVal)
+        .map(r => ({ name: r.name, value: fmt(r.sortVal), color: '#8F641D' }));
       renderInsightBlock('summaryTotalLiveInsight', fmt(topVal),
-        `New restaurants added in <b>${topCity}</b> — the most of any city`, bullets);
+        `New restaurants added in <b>${topCity}</b> — the most of any city`, bullets,
+        'New restaurants, all cities ranked', ranked);
     }
   }
 
@@ -1845,7 +1883,7 @@ function renderSurveySummaryTab(grid){
       { key:'Not Answered', display:'Not Answered' },
     ], (key) => {
       if(key.indexOf('Petpooja')===0) return '#1E6B67';
-      if(key.indexOf('Manual')===0) return '#DD9A2E';
+      if(key.indexOf('Manual')===0) return '#8F641D';
       if(key.indexOf('Cloud')===0) return '#B44736';
       return '#6B6FA8';
     });
@@ -1860,18 +1898,24 @@ function renderSurveySummaryTab(grid){
         `Weakest in <b>${pp.worst.city}</b> (${pp.worst.p}%) — where Manual/Offline billing still dominates instead.`,
       ];
       if(moRow) bullets.push(`Manual/Offline still holds <b>${pct(moRow.total, totalRow.total||1)}%</b> share overall — the single biggest opportunity for growth.`);
+      const ranked = SUMMARY_CITIES
+        .filter(c => pp.row.byCityPct[c])
+        .map(c => ({ name: c, value: pp.row.byCityPct[c], sortVal: pctNum(pp.row.byCityPct[c]) }))
+        .sort((a,b) => b.sortVal - a.sortVal)
+        .map(r => ({ name: r.name, value: r.value, color: '#1E6B67' }));
       renderInsightBlock('summaryCompetitiveInsight', overallPct+'%',
-        `Petpooja's overall share across all available restaurants surveyed so far`, bullets);
+        `Petpooja's overall share across all available restaurants surveyed so far`, bullets,
+        'Petpooja presence, all cities ranked', ranked);
     }
   }
 
   if(data.softwareUsage){
     const el = document.getElementById('summarySoftwareUsage');
     if(el){
-      const colors = { 'Cloud':'#B44736', 'Offline':'#DD9A2E', 'Not Answered':'#6B6FA8', 'Other Local Software':'#5C7A89' };
+      const colors = { 'Cloud':'#B44736', 'Offline':'#8F641D', 'Not Answered':'#6B6FA8', 'Other Local Software':'#5C7A89' };
       let html = '<thead><tr><th style="text-align:left;">Category</th><th>Share</th></tr></thead><tbody>';
       html += data.softwareUsage.map(r => {
-        const color = colors[r.label] || '#DD9A2E';
+        const color = colors[r.label] || '#8F641D';
         return `<tr><td>${metricDot(color)}${r.label}</td><td><span class="pct-pill" style="background:${color}22;color:${color};">${r.pctText || '0%'}</span></td></tr>`;
       }).join('');
       html += '</tbody>';
@@ -1909,7 +1953,7 @@ function wireBillingDetailTable(tableId, selectId, rows){
       const isTotalRow = r.label === 'Total';
       const val = choice === '__TOTAL__' ? r.total : (r.byCity[choice] || 0);
       const pctText = choice === '__TOTAL__' ? r.totalPct : (r.byCityPct[choice] || '');
-      const color = r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#DD9A2E' : '#6B6FA8');
+      const color = r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#8F641D' : '#6B6FA8');
       html += `<tr${isTotalRow ? ' class="total-row"' : ''}><td>${r.label}</td>`;
       if(isTotalRow){
         html += `<td class="cellval-plain">${fmt(val)}</td>`;
@@ -2156,7 +2200,7 @@ function renderLeadsOverview(containerId, rows){
         <table class="excel-table" style="width:100%;min-width:0;">
           <thead><tr><th style="text-align:left;">Software</th><th>Leads</th></tr></thead>
           <tbody>
-            ${topSoftware.map(([name,count]) => `<tr><td>${name}</td>${barCell(count, pct(count, total||1), '#DD9A2E')}</tr>`).join('')}
+            ${topSoftware.map(([name,count]) => `<tr><td>${name}</td>${barCell(count, pct(count, total||1), '#8F641D')}</tr>`).join('')}
           </tbody>
         </table>`;
     } else {
@@ -2374,7 +2418,7 @@ function renderSoftwareUsageTable(containerId, rows, softwareKey, cityKey){
 
   top.forEach(([label, count]) => {
     html += `<tr><td>${label}</td>`;
-    html += barCell(count, pct(count, grandTotal || 1), '#DD9A2E');
+    html += barCell(count, pct(count, grandTotal || 1), '#8F641D');
     CITY_ORDER.forEach(c => {
       const val = byLabelCity[label][c] || 0;
       html += barCell(val, pct(val, cityAnswered[c] || 1), '#8A6DAB');
