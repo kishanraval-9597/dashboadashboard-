@@ -28,7 +28,7 @@
     --paper:#F6F3ED;
     --card:#FFFFFF;
     --ink:#211E1A;
-    --ink-soft:#6B6459;
+    --ink-soft:#5D6B85;
     --line:#E1DBCC;
     --amber:#DD9A2E;
     --amber-deep:#B9761A;
@@ -271,11 +271,11 @@
     border:1px solid var(--line);
     border-radius:12px;
     padding:16px 16px 14px;
-    box-shadow:0 1px 2px rgba(33,30,26,0.04), 0 4px 14px rgba(33,30,26,0.05);
+    box-shadow:0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 4px rgba(33,30,26,0.07), 0 10px 24px rgba(33,30,26,0.10);
     transition:box-shadow .2s ease, transform .2s ease;
   }
   .kpi:hover{
-    box-shadow:0 2px 4px rgba(33,30,26,0.06), 0 10px 26px rgba(33,30,26,0.09);
+    box-shadow:0 1px 0 rgba(255,255,255,0.7) inset, 0 4px 8px rgba(33,30,26,0.10), 0 18px 36px rgba(33,30,26,0.15);
     transform:translateY(-1px);
   }
   .kpi .num{
@@ -334,11 +334,11 @@
     border:1px solid var(--line);
     border-radius:12px;
     padding:18px 18px 12px;
-    box-shadow:0 1px 2px rgba(33,30,26,0.04), 0 4px 14px rgba(33,30,26,0.05);
+    box-shadow:0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 4px rgba(33,30,26,0.07), 0 10px 24px rgba(33,30,26,0.10);
     transition:box-shadow .2s ease, transform .2s ease;
   }
   .card:hover{
-    box-shadow:0 2px 4px rgba(33,30,26,0.06), 0 10px 26px rgba(33,30,26,0.09);
+    box-shadow:0 1px 0 rgba(255,255,255,0.7) inset, 0 4px 8px rgba(33,30,26,0.10), 0 18px 36px rgba(33,30,26,0.15);
     transform:translateY(-1px);
   }
   .card h3{
@@ -473,6 +473,49 @@
   .insight-list li{ margin-bottom:5px; }
   .insight-list li:last-child{ margin-bottom:0; }
   .insight-panel b{ color:var(--brand-deep); }
+  .insight-divider{
+    height:1px;
+    background:var(--brand);
+    opacity:.25;
+    margin:2px 0;
+  }
+  .insight-ranked{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .insight-ranked li{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:12.5px;
+  }
+  .insight-rank{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:700;
+    color:var(--brand);
+    width:16px;
+    flex-shrink:0;
+  }
+  .insight-rank-name{
+    flex:1;
+    color:var(--ink);
+  }
+  .insight-rank-val{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .insight-footnote{
+    font-size:11px;
+    color:var(--ink-soft);
+    font-style:italic;
+    margin-top:2px;
+  }
   .pct-pill{
     display:inline-block;
     padding:3px 9px;
@@ -498,11 +541,11 @@
     position:relative;
     overflow:hidden;
     border-top:4px solid var(--accent, var(--amber));
-    box-shadow:0 1px 2px rgba(33,30,26,0.04), 0 4px 14px rgba(33,30,26,0.05);
+    box-shadow:0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 4px rgba(33,30,26,0.07), 0 10px 24px rgba(33,30,26,0.10);
     transition:box-shadow .2s ease, transform .2s ease;
   }
   .outlet-card:hover{
-    box-shadow:0 2px 4px rgba(33,30,26,0.06), 0 10px 26px rgba(33,30,26,0.09);
+    box-shadow:0 1px 0 rgba(255,255,255,0.7) inset, 0 4px 8px rgba(33,30,26,0.10), 0 18px 36px rgba(33,30,26,0.15);
     transform:translateY(-1px);
   }
   .outlet-card-head{
@@ -1860,7 +1903,8 @@ function wireBillingDetailTable(tableId, selectId, rows){
 
   function render(choice){
     let html = '<thead><tr><th style="text-align:left;">Software</th><th>Count</th><th style="text-align:left;">Type</th></tr></thead><tbody>';
-    let topLabel = null, topVal = -1, cloudTotal = 0, offlineTotal = 0, grandTotal = 0;
+    let cloudTotal = 0, offlineTotal = 0, grandTotal = 0;
+    const softwareRows = [];
     rows.forEach(r => {
       const isTotalRow = r.label === 'Total';
       const val = choice === '__TOTAL__' ? r.total : (r.byCity[choice] || 0);
@@ -1872,7 +1916,7 @@ function wireBillingDetailTable(tableId, selectId, rows){
         grandTotal = val;
       } else {
         html += barCellText(val, pctText, color);
-        if(r.label !== 'Declined to Share' && val > topVal){ topVal = val; topLabel = r.label; }
+        if(r.label !== 'Declined to Share'){ softwareRows.push({ label:r.label, val, color }); }
         if(r.tag === 'Cloud') cloudTotal += val;
         if(r.tag === 'Offline') offlineTotal += val;
       }
@@ -1881,14 +1925,29 @@ function wireBillingDetailTable(tableId, selectId, rows){
     html += '</tbody>';
     table.innerHTML = html;
 
+    softwareRows.sort((a,b) => b.val - a.val);
+    const top = softwareRows.slice(0, 5);
     const insightEl = document.getElementById('summaryBillingExistingInsight');
-    if(insightEl && topLabel){
+    if(insightEl && top.length){
       const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
-      renderInsightBlock('summaryBillingExistingInsight', pct(topVal, grandTotal||1)+'%',
-        `of restaurants use <b>${topLabel}</b> — the most common named software ${label}`,
-        [`Cloud software: <b>${pct(cloudTotal, grandTotal||1)}%</b>.`,
-         `Offline/manual software: <b>${pct(offlineTotal, grandTotal||1)}%</b>.`,
-         `Figures update automatically as you change the city above.`]);
+      const topLabel = top[0].label, topVal = top[0].val;
+      insightEl.innerHTML = `
+        <div class="insight-title">📊 What this means</div>
+        <div class="insight-stat">
+          <span class="insight-stat-num">${pct(topVal, grandTotal||1)}%</span>
+          <span class="insight-stat-label">of restaurants use <b>${topLabel}</b> — the most common named software ${label}</span>
+        </div>
+        <ul class="insight-list">
+          <li>Cloud software: <b>${pct(cloudTotal, grandTotal||1)}%</b>.</li>
+          <li>Offline/manual software: <b>${pct(offlineTotal, grandTotal||1)}%</b>.</li>
+        </ul>
+        <div class="insight-divider"></div>
+        <div class="insight-title">Top 5 named software ${choice === '__TOTAL__' ? '' : `— ${choice}`}</div>
+        <ul class="insight-ranked">
+          ${top.map((s,i) => `<li><span class="insight-rank">${i+1}</span><span class="insight-rank-name">${s.label}</span><span class="insight-rank-val" style="color:${s.color};">${fmt(s.val)} <span style="color:var(--ink-soft);font-weight:400;">(${pct(s.val, grandTotal||1)}%)</span></span></li>`).join('')}
+        </ul>
+        <div class="insight-footnote">Figures update automatically as you change the city above.</div>
+      `;
     }
   }
 
