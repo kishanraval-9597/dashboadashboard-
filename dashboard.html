@@ -663,6 +663,57 @@
   @media (max-width:980px){
     .outlet-cards{grid-template-columns:repeat(2,1fr);}
   }
+
+  /* Unified "at a glance" overview card — same visual language as the
+     Outlet Matrix Total card, but standalone and centered up top so the
+     whole survey-vs-pending-vs-available picture reads as one figure
+     instead of six separate boxes. */
+  .overview-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:6px;
+  }
+  .overview-card{
+    width:100%;
+    max-width:620px;
+  }
+  .overview-leads-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px dashed rgba(255,255,255,.18);
+  }
+  .overview-leads-row .l{
+    font-size:12.5px;
+    font-weight:600;
+    color:#A9BCCE;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+  }
+  .overview-leads-note{
+    display:block;
+    font-size:10.5px;
+    font-weight:400;
+    text-transform:none;
+    letter-spacing:0;
+    color:#8296AC;
+    margin-top:3px;
+    max-width:280px;
+  }
+  .overview-leads-row .n{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:22px;
+    color:#fff;
+    white-space:nowrap;
+  }
+  @media (max-width:640px){
+    .overview-card{ max-width:100%; }
+    .overview-leads-row{ flex-direction:column; align-items:flex-start; gap:6px; }
+  }
   @media (max-width:640px){
     .outlet-cards{grid-template-columns:1fr;}
   }
@@ -750,9 +801,10 @@
     <div class="ticker" id="tickerEl"><span>Waiting on live feed…</span></div>
   </div>
 
-  <div class="kpi-grid" id="kpiGrid">
-    <!-- KPI cards injected here -->
+  <div class="overview-wrap" id="kpiGrid">
+    <!-- Unified overview card injected here -->
   </div>
+  <div class="stat-note" style="text-align:center;margin:-14px 0 20px;">Available / Not Available percentages are relative to Completed surveys. New Restaurant Leads is a separate count, not part of the outlet survey total above.</div>
 
   <!-- OUTLET MATRIX -->
   <div class="section-head">
@@ -774,8 +826,9 @@
       <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
       <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
     </div>
-    <div style="overflow-x:auto;">
-      <table class="excel-table" id="competitiveTable"></table>
+    <div class="table-with-insight">
+      <div style="overflow-x:auto;"><table class="excel-table" id="competitiveTable"></table></div>
+      <div class="insight-panel" id="competitiveInsight"></div>
     </div>
     <div class="stat-note">Percentages are relative to that city's Available count.</div>
   </div>
@@ -1680,6 +1733,39 @@ function renderCompetitive(survey){
 
   html += '</tbody>';
   el.innerHTML = html;
+
+  // Insight: which city leans most/least toward Petpooja, and where the
+  // biggest manual/offline conversion opportunity and cloud-competition
+  // threat sit — same "What this means" pattern used elsewhere on the page.
+  let bestCity = null, bestPct = -1, worstCity = null, worstPct = 101;
+  let oppCity = null, oppPct = -1, threatCity = null, threatPct = -1;
+  CITY_ORDER.forEach(c => {
+    const avail = data[c].available;
+    if(!avail) return; // skip cities with no Available count — no meaningful % there
+    const pPct = pct(data[c].petpooja, avail);
+    if(pPct > bestPct){ bestPct = pPct; bestCity = c; }
+    if(pPct < worstPct){ worstPct = pPct; worstCity = c; }
+    const mPct = pct(data[c].manualOffline, avail);
+    if(mPct > oppPct){ oppPct = mPct; oppCity = c; }
+    const cPct = pct(data[c].cloudCompetition, avail);
+    if(cPct > threatPct){ threatPct = cPct; threatCity = c; }
+  });
+  if(bestCity){
+    const overallPct = pct(grand.petpooja, grand.available||1);
+    const overallOppPct = pct(grand.manualOffline, grand.available||1);
+    const overallThreatPct = pct(grand.cloudCompetition, grand.available||1);
+    const ranked = CITY_ORDER
+      .filter(c => data[c].available > 0)
+      .map(c => ({ name: c, sortVal: pct(data[c].petpooja, data[c].available) }))
+      .sort((a,b) => b.sortVal - a.sortVal)
+      .map(r => ({ name: r.name, value: r.sortVal+'%', color: '#1E6B67' }));
+    renderInsightBlock('competitiveInsight', overallPct+'%',
+      `of available restaurants already use Petpooja`,
+      [`Strongest Petpooja presence in <b>${bestCity}</b> (${bestPct}%)${worstCity && worstCity !== bestCity ? `, weakest in <b>${worstCity}</b> (${worstPct}%).` : '.'}`,
+       `<b>${overallOppPct}%</b> overall still run Manual/Offline — biggest single opportunity is <b>${oppCity}</b> at ${oppPct}%.`,
+       `Cloud competition sits at <b>${overallThreatPct}%</b> overall, highest in <b>${threatCity}</b> (${threatPct}%).`],
+      'Petpooja presence, cities ranked', ranked);
+  }
 }
 
 // Same competitive breakdown, but for New Restaurant Leads. There's no
@@ -2324,21 +2410,50 @@ function buildKpis(survey, rest){
   CITY_ORDER.forEach(c => { totalOutletsSum += TOTAL_OUTLETS[c] || 0; });
   const remaining = Math.max(totalOutletsSum - totalSurvey, 0);
 
-  const kpis = [
-    { num: fmt(totalOutletsSum), lbl:'Total outlets to survey', accent:'brand' },
-    { num: fmt(remaining), lbl:'Outlets remaining to visit', accent:'brand' },
-    { num: fmt(totalSurvey), lbl:'Total surveys logged', accent:'' },
-    { num: fmt(totalRest), lbl:'New restaurant leads', accent:'' },
-    { num: fmt(availYes), lbl:'Restaurants available', accent:'teal' },
-    { num: fmt(availNo), lbl:'Restaurants not available', accent:'brick' },
-  ];
+  // Same shape as the Outlet Matrix "Total" card (outlet-total-card), but
+  // standalone up top: Total outlets in the center, Completed vs Pending
+  // below it, then Completed broken into Available vs Not Available.
+  const visitedPct = pct(totalSurvey, totalOutletsSum || 1);
+  const pendingPct = pct(remaining, totalOutletsSum || 1);
+  const availPct = pct(availYes, totalSurvey || 1);
+  const notAvailPct = pct(availNo, totalSurvey || 1);
 
-  document.getElementById('kpiGrid').innerHTML = kpis.map(k => `
-    <div class="kpi ${k.accent ? 'accent-'+k.accent : ''}">
-      <div class="num">${k.num}</div>
-      <div class="lbl">${k.lbl}</div>
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="overview-card outlet-card outlet-total-card">
+      <div class="outlet-card-head">
+        <span class="outlet-city">All Cities — Total</span>
+        <span class="outlet-total">${fmt(totalOutletsSum)} outlets</span>
+      </div>
+
+      <div class="outlet-hero">
+        <div class="outlet-hero-num" style="color:#8FC1E8;">${visitedPct}%</div>
+        <div class="outlet-hero-label">of outlets visited</div>
+      </div>
+      <div class="outlet-progress-track" style="background:rgba(255,255,255,.14);">
+        <div class="outlet-progress-fill" style="width:${visitedPct}%;background:#8FC1E8;"></div>
+      </div>
+      <div class="outlet-progress-legend">
+        <span><i style="background:#8FC1E8;"></i>Completed&nbsp;<b>${fmt(totalSurvey)}</b>&nbsp;(${visitedPct}%)</span>
+        <span><i style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);"></i>Pending&nbsp;<b>${fmt(remaining)}</b>&nbsp;(${pendingPct}%)</span>
+      </div>
+
+      <div class="outlet-substats-v2">
+        <div class="outlet-substat-row">
+          <span class="l">Available</span>
+          <span class="n">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${availPct}%</span></span>
+        </div>
+        <div class="outlet-substat-row">
+          <span class="l">Not Available</span>
+          <span class="n">${fmt(availNo)} <span class="pct-pill" style="background:#B4473655;color:#F5B3A6;">${notAvailPct}%</span></span>
+        </div>
+      </div>
+
+      <div class="overview-leads-row">
+        <span class="l">New Restaurant Leads<span class="overview-leads-note">Captured separately — not part of the outlet total above</span></span>
+        <span class="n">${fmt(totalRest)}</span>
+      </div>
     </div>
-  `).join('');
+  `;
 }
 
 function buildTicker(survey, rest){
