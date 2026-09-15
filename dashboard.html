@@ -430,7 +430,10 @@
   .software-matrix-grid{
     display:grid;
     grid-template-columns:repeat(2, minmax(180px, 1fr));
-    gap:14px;
+    grid-auto-rows:min-content;
+    align-content:start;
+    align-self:flex-start;
+    gap:12px;
     flex:1 1 420px;
   }
   .smx-tile{
@@ -439,7 +442,7 @@
     border:1px solid var(--line);
     border-top:4px solid var(--accent, var(--brand));
     border-radius:12px;
-    padding:16px 18px 14px;
+    padding:14px 16px 12px;
     box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 2px 4px rgba(33,30,26,.06), 0 6px 16px rgba(33,30,26,.06);
     transition:box-shadow .2s ease, transform .2s ease;
   }
@@ -496,26 +499,77 @@
     .software-matrix-grid{ grid-template-columns:1fr; }
   }
 
-  /* Billing System Usage — Existing Data: a small horizontal bar behind
-     each software's count, so relative scale reads at a glance instead of
-     requiring a scan down the percentage column. */
-  .mini-bar-cell{ padding:9px 16px; min-width:150px; }
-  .mini-bar-track{
-    height:6px;
-    border-radius:4px;
-    background:#EFEAE0;
-    overflow:hidden;
-    margin-bottom:6px;
+  /* Billing System Usage — Existing Data: a clean sorted leaderboard
+     (biggest software first) instead of a dense 3-column table, so the
+     shape of the data reads at a glance instead of requiring row-by-row
+     comparison. */
+  .billing-bar-list{
+    display:flex;
+    flex-direction:column;
+    flex:1 1 380px;
   }
-  .mini-bar-fill{ height:100%; border-radius:4px; }
-  .mini-bar-val{
-    font-family:'JetBrains Mono',monospace;
+  .billing-bar-summary{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding-bottom:12px;
+    margin-bottom:14px;
+    border-bottom:2px solid var(--ink);
+  }
+  .billing-bar-summary .l{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--ink-soft);
+  }
+  .billing-bar-summary .n{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:24px;
+    color:var(--ink);
+  }
+  .billing-bar-row{ margin-bottom:13px; }
+  .billing-bar-row:last-child{ margin-bottom:0; }
+  .billing-bar-row-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:5px;
+  }
+  .billing-bar-label{
+    display:flex;
+    align-items:center;
+    gap:7px;
     font-size:13px;
     font-weight:600;
     color:var(--ink);
+  }
+  .billing-bar-tag{
+    font-size:9.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    padding:2px 7px;
+    border-radius:20px;
+    line-height:1.5;
+  }
+  .billing-bar-count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
     white-space:nowrap;
   }
-  .mini-bar-pct{ font-weight:700; margin-left:5px; }
+  .billing-bar-pct{ color:var(--ink-soft); font-weight:600; margin-left:4px; }
+  .billing-bar-track{
+    height:9px;
+    border-radius:5px;
+    background:#EFEAE0;
+    overflow:hidden;
+  }
+  .billing-bar-fill{ height:100%; border-radius:5px; }
 
   .insight-panel{
     flex:1;
@@ -1090,7 +1144,7 @@
         <select id="summaryBillingExistingSelect"></select>
       </div>
       <div class="table-with-insight">
-        <div style="overflow-x:auto;"><table class="excel-table" id="summaryBillingExisting"></table></div>
+        <div id="summaryBillingExisting" class="billing-bar-list"></div>
         <div class="insight-panel" id="summaryBillingExistingInsight"></div>
       </div>
     </div>
@@ -1744,19 +1798,8 @@ function barCell(val, pctVal, color){
   return `<td><span class="cellval">${fmt(val)} <span class="pct-pill" style="background:${color}22;color:${color};">${pctVal}%</span></span></td>`;
 }
 
-// Same info as barCellText, but with a small horizontal bar behind the
-// value so relative scale is visible without reading the percentage column.
+// Parses a sheet-formatted percentage string ("21.70%") into a plain number.
 function parsePctText(pctText){ return parseFloat((pctText||'0').replace('%','')) || 0; }
-function miniBarCell(val, pctText, color){
-  const p = Math.min(parsePctText(pctText), 100);
-  const display = pctText || '0%';
-  return `<td>
-    <div class="mini-bar-cell">
-      <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${p}%;background:${color};"></div></div>
-      <span class="mini-bar-val">${fmt(val)} <span class="mini-bar-pct" style="color:${color};">${display}</span></span>
-    </div>
-  </td>`;
-}
 
 // Same visual as barCell, but takes the sheet's own pre-formatted percentage
 // text (e.g. "21.70%") rather than computing one — used for Survey Summary
@@ -2245,40 +2288,56 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows){
 // transposing these would trade 6 city-columns for 11+ software-columns,
 // which is worse, not better). A city dropdown lets you drill into any one
 // city instead of only seeing the Total.
-function wireBillingDetailTable(tableId, selectId, rows){
-  const table = document.getElementById(tableId);
+function wireBillingDetailTable(containerId, selectId, rows){
+  const list = document.getElementById(containerId);
   const sel = document.getElementById(selectId);
-  if(!table || !sel || !rows) return;
+  if(!list || !sel || !rows) return;
 
   sel.innerHTML = '<option value="__TOTAL__">Total (all cities)</option>' +
     SUMMARY_CITIES.map(c => `<option value="${c}">${c}</option>`).join('');
 
   function render(choice){
-    let html = '<thead><tr><th style="text-align:left;">Software</th><th>Count</th><th style="text-align:left;">Type</th></tr></thead><tbody>';
     let cloudTotal = 0, offlineTotal = 0, grandTotal = 0;
-    const softwareRows = [];
+    const allRows = [];
     rows.forEach(r => {
-      const isTotalRow = r.label === 'Total';
+      if(r.label === 'Total'){
+        grandTotal = choice === '__TOTAL__' ? r.total : (r.byCity[choice] || 0);
+        return;
+      }
       const val = choice === '__TOTAL__' ? r.total : (r.byCity[choice] || 0);
       const pctText = choice === '__TOTAL__' ? r.totalPct : (r.byCityPct[choice] || '');
-      const color = r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#8F641D' : '#6B6FA8');
-      html += `<tr${isTotalRow ? ' class="total-row"' : ''}><td>${r.label}</td>`;
-      if(isTotalRow){
-        html += `<td class="cellval-plain">${fmt(val)}</td>`;
-        grandTotal = val;
-      } else {
-        html += miniBarCell(val, pctText, color);
-        if(r.label !== 'Declined to Share'){ softwareRows.push({ label:r.label, val, color }); }
-        if(r.tag === 'Cloud') cloudTotal += val;
-        if(r.tag === 'Offline') offlineTotal += val;
-      }
-      html += `<td style="text-align:left;font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-soft);">${r.tag||''}</td></tr>`;
+      const color = r.label === 'Others' ? '#5C7A89' : (r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#8F641D' : '#6B6FA8'));
+      allRows.push({ label:r.label, val, pctText, color, tag:r.tag });
+      if(r.tag === 'Cloud') cloudTotal += val;
+      if(r.tag === 'Offline') offlineTotal += val;
     });
-    html += '</tbody>';
-    table.innerHTML = html;
 
-    softwareRows.sort((a,b) => b.val - a.val);
-    const top = softwareRows.slice(0, 5);
+    // Sorted biggest-first — the one change that turns a dense, arbitrarily
+    // ordered table into a leaderboard that reads at a glance. Bar width is
+    // relative to the top software here (not % of total), so the gap
+    // between #1 and the rest is visually obvious.
+    const sorted = allRows.slice().sort((a,b) => b.val - a.val);
+    const maxVal = sorted.length ? sorted[0].val : 1;
+
+    let html = `<div class="billing-bar-summary"><span class="l">Total${choice === '__TOTAL__' ? ' — all cities' : ' — '+choice}</span><span class="n">${fmt(grandTotal)}</span></div>`;
+    html += sorted.map(r => {
+      const tagHtml = r.tag ? `<span class="billing-bar-tag" style="background:${r.color}22;color:${r.color};">${r.tag}</span>` : '';
+      const fillWidth = maxVal ? (r.val / maxVal) * 100 : 0;
+      return `
+        <div class="billing-bar-row">
+          <div class="billing-bar-row-top">
+            <span class="billing-bar-label">${r.label}${tagHtml}</span>
+            <span class="billing-bar-count">${fmt(r.val)} <span class="billing-bar-pct">(${r.pctText || '0%'})</span></span>
+          </div>
+          <div class="billing-bar-track"><div class="billing-bar-fill" style="width:${fillWidth}%;background:${r.color};"></div></div>
+        </div>`;
+    }).join('');
+    list.innerHTML = html;
+
+    // "Declined to Share" is a non-answer, not a software choice — kept in
+    // the visible list above, but left out of the Top 5 named-software
+    // ranking below so the ranking only ever names real software.
+    const top = sorted.filter(r => r.label !== 'Declined to Share').slice(0, 5);
     const insightEl = document.getElementById('summaryBillingExistingInsight');
     if(insightEl && top.length){
       const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
@@ -2664,8 +2723,8 @@ function buildKpis(survey, rest){
 
       <div class="overview-body">
         <div class="overview-hero">
-          <div class="outlet-hero-num" style="color:#8FC1E8;">${visitedPct}%</div>
-          <div class="outlet-hero-label">of outlets visited</div>
+          <div class="outlet-hero-num" style="color:#8FC1E8;font-size:38px;">${fmt(totalOutletsSum)}</div>
+          <div class="outlet-hero-label">Total Outlets <span class="pct-pill" style="background:rgba(255,255,255,.18);color:#D7E2EC;">${visitedPct}% visited</span></div>
           <div class="outlet-progress-track" style="background:rgba(255,255,255,.14);">
             <div class="outlet-progress-fill" style="width:${visitedPct}%;background:#8FC1E8;"></div>
           </div>
@@ -2698,17 +2757,17 @@ function buildKpis(survey, rest){
 
       <div class="overview-equation">
         <div class="overview-eq-item">
-          <span class="n">${fmt(totalRest)} <span class="pct-pill" style="background:rgba(255,255,255,.16);color:#D7E2EC;">${pct(totalRest, totalOutletsSum||1)}%</span></span>
+          <span class="n">${fmt(totalRest)}</span>
           <span class="l">New Restaurant Leads</span>
         </div>
         <span class="overview-eq-op">+</span>
         <div class="overview-eq-item">
-          <span class="n">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${pct(availYes, totalOutletsSum||1)}%</span></span>
+          <span class="n">${fmt(availYes)}</span>
           <span class="l">Available Restaurants</span>
         </div>
         <span class="overview-eq-op">=</span>
         <div class="overview-eq-item highlight">
-          <span class="n">${fmt(totalLiveOutlets)} <span class="pct-pill" style="background:#8FC1E855;color:#D8ECFA;">${pct(totalLiveOutlets, totalOutletsSum||1)}%</span></span>
+          <span class="n">${fmt(totalLiveOutlets)}</span>
           <span class="l">Total Live Outlets in Market — Your Target</span>
         </div>
       </div>
