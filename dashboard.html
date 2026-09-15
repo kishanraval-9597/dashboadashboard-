@@ -422,6 +422,101 @@
     flex-wrap:wrap;
   }
   .table-with-insight > table{ flex-shrink:0; }
+
+  /* Software Usage Matrix — four stat tiles instead of a plain list, same
+     visual language as the Outlet Matrix / overview cards (accent top
+     border, big serif number, mini progress bar) so the page's most-cited
+     figure gets a treatment that matches its importance. */
+  .software-matrix-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(180px, 1fr));
+    gap:14px;
+    flex:1 1 420px;
+  }
+  .smx-tile{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-top:4px solid var(--accent, var(--brand));
+    border-radius:12px;
+    padding:16px 18px 14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 2px 4px rgba(33,30,26,.06), 0 6px 16px rgba(33,30,26,.06);
+    transition:box-shadow .2s ease, transform .2s ease;
+  }
+  .smx-tile:hover{
+    transform:translateY(-1px);
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 4px 8px rgba(33,30,26,.09), 0 12px 26px rgba(33,30,26,.11);
+  }
+  .smx-tile-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .smx-tile-icon{
+    width:24px;
+    height:24px;
+    border-radius:7px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    color:#fff;
+  }
+  .smx-tile-label{
+    font-size:11.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--ink-soft);
+  }
+  .smx-tile-num{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:30px;
+    line-height:1;
+    color:var(--accent, var(--brand));
+    text-shadow:0 1px 0 rgba(255,255,255,.8), 0 2px 4px rgba(33,30,26,.12);
+  }
+  .smx-tile-sub{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:5px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .smx-tile-track{
+    height:6px;
+    border-radius:4px;
+    background:#EFEAE0;
+    overflow:hidden;
+    margin-top:12px;
+  }
+  .smx-tile-fill{ height:100%; border-radius:4px; }
+  @media (max-width:560px){
+    .software-matrix-grid{ grid-template-columns:1fr; }
+  }
+
+  /* Billing System Usage — Existing Data: a small horizontal bar behind
+     each software's count, so relative scale reads at a glance instead of
+     requiring a scan down the percentage column. */
+  .mini-bar-cell{ padding:9px 16px; min-width:150px; }
+  .mini-bar-track{
+    height:6px;
+    border-radius:4px;
+    background:#EFEAE0;
+    overflow:hidden;
+    margin-bottom:6px;
+  }
+  .mini-bar-fill{ height:100%; border-radius:4px; }
+  .mini-bar-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  .mini-bar-pct{ font-weight:700; margin-left:5px; }
+
   .insight-panel{
     flex:1;
     min-width:220px;
@@ -649,7 +744,15 @@
   .outlet-total-card{
     background:linear-gradient(155deg, var(--brand-deep), #14212F);
     color:#fff;
+    border-color:rgba(255,255,255,.14);
     border-top-color:var(--brand);
+    /* Dark card needs its own shadow recipe — the base card's glossy white
+       inset highlight (meant for light paper cards) was showing through as
+       a stray bright seam along the top edge on a dark background. */
+    box-shadow:0 2px 8px rgba(0,0,0,.28), 0 18px 40px rgba(0,0,0,.38);
+  }
+  .outlet-total-card:hover{
+    box-shadow:0 3px 10px rgba(0,0,0,.32), 0 22px 46px rgba(0,0,0,.42);
   }
   .outlet-total-card .outlet-city{ color:#fff; }
   .outlet-total-card .outlet-total{ color:#D7E2EC; }
@@ -974,7 +1077,7 @@
         <select id="summarySoftwareUsageSelect"></select>
       </div>
       <div class="table-with-insight">
-        <table class="excel-table" id="summarySoftwareUsage"></table>
+        <div id="summarySoftwareUsage" class="software-matrix-grid"></div>
         <div class="insight-panel" id="summarySoftwareUsageInsight"></div>
       </div>
       <div class="stat-note">Cloud / Offline / Not Answered / Other Local Software are derived from the Billing System Usage rows below, grouped by type — same source, same numbers, just re-grouped by city.</div>
@@ -1641,6 +1744,20 @@ function barCell(val, pctVal, color){
   return `<td><span class="cellval">${fmt(val)} <span class="pct-pill" style="background:${color}22;color:${color};">${pctVal}%</span></span></td>`;
 }
 
+// Same info as barCellText, but with a small horizontal bar behind the
+// value so relative scale is visible without reading the percentage column.
+function parsePctText(pctText){ return parseFloat((pctText||'0').replace('%','')) || 0; }
+function miniBarCell(val, pctText, color){
+  const p = Math.min(parsePctText(pctText), 100);
+  const display = pctText || '0%';
+  return `<td>
+    <div class="mini-bar-cell">
+      <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${p}%;background:${color};"></div></div>
+      <span class="mini-bar-val">${fmt(val)} <span class="mini-bar-pct" style="color:${color};">${display}</span></span>
+    </div>
+  </td>`;
+}
+
 // Same visual as barCell, but takes the sheet's own pre-formatted percentage
 // text (e.g. "21.70%") rather than computing one — used for Survey Summary
 // tab data, where percentages are already maintained in the sheet itself.
@@ -2054,10 +2171,18 @@ function computeSoftwareUsageByCity(billingRows){
   };
 }
 
-function wireSoftwareUsageMatrix(tableId, selectId, billingRows){
-  const table = document.getElementById(tableId);
+// Small line icons for each Software Usage Matrix category tile.
+const SMX_ICONS = {
+  cloud: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>`,
+  offline: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  notAnswered: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>`,
+  other: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 004 0 2 2 0 004 0 2 2 0 004 0 2 2 0 004 0"/><path d="M5 9v10h14V9"/></svg>`,
+};
+
+function wireSoftwareUsageMatrix(containerId, selectId, billingRows){
+  const container = document.getElementById(containerId);
   const sel = document.getElementById(selectId);
-  if(!table || !sel || !billingRows) return;
+  if(!container || !sel || !billingRows) return;
 
   sel.innerHTML = '<option value="__TOTAL__">Total (all cities)</option>' +
     SUMMARY_CITIES.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -2066,19 +2191,50 @@ function wireSoftwareUsageMatrix(tableId, selectId, billingRows){
 
   function render(choice){
     const cats = sumFor(choice);
-    let html = '<thead><tr><th style="text-align:left;">Category</th><th>Share</th></tr></thead><tbody>';
-    html += cats.map(c => `<tr><td>${metricDot(c.color)}${c.label}</td><td><span class="pct-pill" style="background:${c.color}22;color:${c.color};">${c.pct}%</span></td></tr>`).join('');
-    html += '</tbody>';
-    table.innerHTML = html;
+    container.innerHTML = cats.map(c => `
+      <div class="smx-tile" style="--accent:${c.color};">
+        <div class="smx-tile-head">
+          <span class="smx-tile-icon" style="background:${c.color};">${SMX_ICONS[c.key]}</span>
+          <span class="smx-tile-label">${c.label}</span>
+        </div>
+        <div class="smx-tile-num">${c.pct}%</div>
+        <div class="smx-tile-sub">${fmt(c.val)} restaurants</div>
+        <div class="smx-tile-track"><div class="smx-tile-fill" style="width:${c.pct}%;background:${c.color};"></div></div>
+      </div>
+    `).join('');
 
     const byLabel = {};
     cats.forEach(c => { byLabel[c.label] = c.pct; });
+
+    // Rank every city by Offline share — surfaces where the Manual/Offline
+    // conversion opportunity is largest and where the market is already
+    // most modernized, not just the combined total.
+    const cityRanks = SUMMARY_CITIES
+      .map(city => {
+        const offlineCat = sumFor(city).find(c => c.key === 'offline');
+        return { name: city, sortVal: offlineCat ? offlineCat.pct : 0 };
+      })
+      .sort((a,b) => b.sortVal - a.sortVal);
+    const highest = cityRanks[0];
+    const lowest = cityRanks[cityRanks.length - 1];
+    const rankedOffline = cityRanks.map(r => ({ name: r.name, value: r.sortVal+'%', color:'#8F641D' }));
+
     const scope = choice === '__TOTAL__' ? 'surveyed so far' : `surveyed in <b>${choice}</b>`;
+    const bullets = [
+      `Cloud software (includes Petpooja): <b>${byLabel['Cloud'] ?? '—'}%</b>.`,
+      `Declined to share their billing setup: <b>${byLabel['Not Answered'] ?? '—'}%</b>.`,
+      `Other local/regional software: <b>${byLabel['Other Local Software'] ?? '—'}%</b>.`,
+    ];
+    if(highest){
+      bullets.push(`Biggest opportunity: <b>${highest.name}</b> is <b>${highest.sortVal}%</b> Offline — the most room to convert.`);
+    }
+    if(lowest && highest && lowest.name !== highest.name){
+      bullets.push(`Most modernized: <b>${lowest.name}</b> at just <b>${lowest.sortVal}%</b> Offline.`);
+    }
+
     renderInsightBlock('summarySoftwareUsageInsight', (byLabel['Offline'] ?? '—')+'%',
       `of restaurants ${scope} still use offline / pen-paper billing`,
-      [`Cloud software (includes Petpooja): <b>${byLabel['Cloud'] ?? '—'}%</b>.`,
-       `Declined to share their billing setup: <b>${byLabel['Not Answered'] ?? '—'}%</b>.`,
-       `Other local/regional software: <b>${byLabel['Other Local Software'] ?? '—'}%</b>.`]);
+      bullets, 'Manual/Offline share, cities ranked', rankedOffline);
   }
 
   sel.onchange = () => render(sel.value);
@@ -2111,7 +2267,7 @@ function wireBillingDetailTable(tableId, selectId, rows){
         html += `<td class="cellval-plain">${fmt(val)}</td>`;
         grandTotal = val;
       } else {
-        html += barCellText(val, pctText, color);
+        html += miniBarCell(val, pctText, color);
         if(r.label !== 'Declined to Share'){ softwareRows.push({ label:r.label, val, color }); }
         if(r.tag === 'Cloud') cloudTotal += val;
         if(r.tag === 'Offline') offlineTotal += val;
@@ -2127,6 +2283,14 @@ function wireBillingDetailTable(tableId, selectId, rows){
     if(insightEl && top.length){
       const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
       const topLabel = top[0].label, topVal = top[0].val;
+      const runnerUp = top[1];
+      const gap = runnerUp ? topVal - runnerUp.val : 0;
+      const leadBullet = offlineTotal >= cloudTotal
+        ? `Offline still leads Cloud by <b>${pct(offlineTotal - cloudTotal, grandTotal||1)} points</b> ${label}.`
+        : `Cloud has overtaken Offline by <b>${pct(cloudTotal - offlineTotal, grandTotal||1)} points</b> ${label} — a shift worth flagging.`;
+      const gapBullet = runnerUp
+        ? `<b>${topLabel}</b> leads <b>${runnerUp.label}</b> by <b>${fmt(gap)}</b> restaurants (${pct(gap, grandTotal||1)}% of the total).`
+        : '';
       insightEl.innerHTML = `
         <div class="insight-title">📊 What this means</div>
         <div class="insight-stat">
@@ -2136,6 +2300,8 @@ function wireBillingDetailTable(tableId, selectId, rows){
         <ul class="insight-list">
           <li>Cloud software: <b>${pct(cloudTotal, grandTotal||1)}%</b>.</li>
           <li>Offline/manual software: <b>${pct(offlineTotal, grandTotal||1)}%</b>.</li>
+          <li>${leadBullet}</li>
+          ${gapBullet ? `<li>${gapBullet}</li>` : ''}
         </ul>
         <div class="insight-divider"></div>
         <div class="insight-title">Top 5 named software ${choice === '__TOTAL__' ? '' : `— ${choice}`}</div>
@@ -2492,7 +2658,7 @@ function buildKpis(survey, rest){
   document.getElementById('kpiGrid').innerHTML = `
     <div class="overview-card outlet-card outlet-total-card">
       <div class="outlet-card-head">
-        <span class="outlet-city">All Cities — Total</span>
+        <span class="outlet-city">Survey Progress</span>
         <span class="outlet-total">${fmt(totalOutletsSum)} outlets</span>
       </div>
 
@@ -2532,17 +2698,17 @@ function buildKpis(survey, rest){
 
       <div class="overview-equation">
         <div class="overview-eq-item">
-          <span class="n">${fmt(totalRest)}</span>
+          <span class="n">${fmt(totalRest)} <span class="pct-pill" style="background:rgba(255,255,255,.16);color:#D7E2EC;">${pct(totalRest, totalOutletsSum||1)}%</span></span>
           <span class="l">New Restaurant Leads</span>
         </div>
         <span class="overview-eq-op">+</span>
         <div class="overview-eq-item">
-          <span class="n">${fmt(availYes)}</span>
+          <span class="n">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${pct(availYes, totalOutletsSum||1)}%</span></span>
           <span class="l">Available Restaurants</span>
         </div>
         <span class="overview-eq-op">=</span>
         <div class="overview-eq-item highlight">
-          <span class="n">${fmt(totalLiveOutlets)}</span>
+          <span class="n">${fmt(totalLiveOutlets)} <span class="pct-pill" style="background:#8FC1E855;color:#D8ECFA;">${pct(totalLiveOutlets, totalOutletsSum||1)}%</span></span>
           <span class="l">Total Live Outlets in Market — Your Target</span>
         </div>
       </div>
