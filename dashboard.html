@@ -232,7 +232,7 @@
     overflow:hidden;
     margin-bottom:26px;
     position:relative;
-    height:34px;
+    height:42px;
   }
   .ticker-wrap::before, .ticker-wrap::after{
     content:'';
@@ -243,14 +243,15 @@
   .ticker{
     display:flex;
     align-items:center;
-    gap:48px;
+    gap:52px;
     white-space:nowrap;
     position:absolute;
     animation:scroll 110s linear infinite;
-    height:34px;
+    height:42px;
     color:#F2EADA;
     font-family:'JetBrains Mono',monospace;
-    font-size:12px;
+    font-size:15px;
+    font-weight:500;
     padding-left:24px;
   }
   .ticker span.sep{color:var(--amber);}
@@ -873,6 +874,7 @@
     color:#fff;
     white-space:nowrap;
   }
+  .overview-stat-row .n.big{ font-size:24px; }
   .overview-equation{
     display:flex;
     align-items:center;
@@ -2718,7 +2720,6 @@ function buildKpis(survey, rest){
     <div class="overview-card outlet-card outlet-total-card">
       <div class="outlet-card-head">
         <span class="outlet-city">Survey Progress</span>
-        <span class="outlet-total">${fmt(totalOutletsSum)} outlets</span>
       </div>
 
       <div class="overview-body">
@@ -2734,23 +2735,23 @@ function buildKpis(survey, rest){
           <div class="overview-col-title">Completed vs Pending</div>
           <div class="overview-stat-row">
             <span class="l">Completed</span>
-            <span class="n">${fmt(totalSurvey)} <span class="pct-pill" style="background:#8FC1E855;color:#D8ECFA;">${visitedPct}%</span></span>
+            <span class="n big">${fmt(totalSurvey)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${visitedPct}%</span></span>
           </div>
           <div class="overview-stat-row">
             <span class="l">Pending</span>
-            <span class="n">${fmt(remaining)} <span class="pct-pill" style="background:rgba(255,255,255,.18);color:#D7E2EC;">${pendingPct}%</span></span>
+            <span class="n big">${fmt(remaining)} <span class="pct-pill" style="background:#8F641D55;color:#F0D9A8;">${pendingPct}%</span></span>
           </div>
         </div>
 
         <div class="overview-col">
-          <div class="overview-col-title">Of Completed — Available?</div>
+          <div class="overview-col-title">From Confirmed Data</div>
           <div class="overview-stat-row">
             <span class="l">Available</span>
-            <span class="n">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${availPct}%</span></span>
+            <span class="n big">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${availPct}%</span></span>
           </div>
           <div class="overview-stat-row">
             <span class="l">Not Available</span>
-            <span class="n">${fmt(availNo)} <span class="pct-pill" style="background:#B4473655;color:#F5B3A6;">${notAvailPct}%</span></span>
+            <span class="n big">${fmt(availNo)} <span class="pct-pill" style="background:#B4473655;color:#F5B3A6;">${notAvailPct}%</span></span>
           </div>
         </div>
       </div>
