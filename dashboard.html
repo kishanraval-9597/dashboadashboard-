@@ -665,54 +665,93 @@
   }
 
   /* Unified "at a glance" overview card — same visual language as the
-     Outlet Matrix Total card, but standalone and centered up top so the
-     whole survey-vs-pending-vs-available picture reads as one figure
-     instead of six separate boxes. */
+     Outlet Matrix Total card, but standalone up top, full-width, and laid
+     out as three columns (Visited hero / Completed vs Pending / Available
+     vs Not Available) so the extra width is used for more numbers instead
+     of empty space. A bottom equation strip adds the one figure that isn't
+     in the Outlet Matrix at all: New Leads + Available = total live outlets. */
   .overview-wrap{
-    display:flex;
-    justify-content:center;
     margin-bottom:6px;
   }
   .overview-card{
     width:100%;
-    max-width:620px;
   }
-  .overview-leads-row{
+  .overview-body{
+    display:grid;
+    grid-template-columns:1.05fr 1fr 1fr;
+    gap:32px;
+    margin-top:2px;
+  }
+  .overview-hero .outlet-hero-num{ font-size:50px; }
+  .overview-hero .outlet-progress-track{ margin-top:14px; }
+  .overview-col-title{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:#8FA6BE;
+    margin-bottom:14px;
+    padding-bottom:9px;
+    border-bottom:1px solid rgba(255,255,255,.14);
+  }
+  .overview-stat-row{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:16px;
-    margin-top:16px;
-    padding-top:16px;
-    border-top:1px dashed rgba(255,255,255,.18);
+    gap:10px;
+    margin-bottom:13px;
   }
-  .overview-leads-row .l{
+  .overview-stat-row:last-child{ margin-bottom:0; }
+  .overview-stat-row .l{
     font-size:12.5px;
     font-weight:600;
     color:#A9BCCE;
     text-transform:uppercase;
     letter-spacing:.03em;
   }
-  .overview-leads-note{
-    display:block;
-    font-size:10.5px;
-    font-weight:400;
-    text-transform:none;
-    letter-spacing:0;
-    color:#8296AC;
-    margin-top:3px;
-    max-width:280px;
-  }
-  .overview-leads-row .n{
+  .overview-stat-row .n{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
-    font-size:22px;
+    font-size:17px;
     color:#fff;
     white-space:nowrap;
   }
+  .overview-equation{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:18px;
+    margin-top:26px;
+    padding-top:22px;
+    border-top:1px dashed rgba(255,255,255,.18);
+  }
+  .overview-eq-item{ text-align:center; min-width:130px; }
+  .overview-eq-item .n{
+    display:block;
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:25px;
+    color:#fff;
+  }
+  .overview-eq-item .l{
+    display:block;
+    font-size:10.5px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:#A9BCCE;
+    margin-top:5px;
+  }
+  .overview-eq-op{ font-family:'Fraunces',serif; font-size:22px; color:#7D93AB; }
+  .overview-eq-item.highlight .n{ color:#8FC1E8; font-size:34px; }
+  .overview-eq-item.highlight .l{ color:#D7E2EC; }
+  @media (max-width:900px){
+    .overview-body{ grid-template-columns:1fr; gap:24px; }
+  }
   @media (max-width:640px){
-    .overview-card{ max-width:100%; }
-    .overview-leads-row{ flex-direction:column; align-items:flex-start; gap:6px; }
+    .overview-equation{ flex-direction:column; gap:10px; }
+    .overview-eq-op{ transform:rotate(90deg); }
   }
   @media (max-width:640px){
     .outlet-cards{grid-template-columns:1fr;}
@@ -804,7 +843,7 @@
   <div class="overview-wrap" id="kpiGrid">
     <!-- Unified overview card injected here -->
   </div>
-  <div class="stat-note" style="text-align:center;margin:-14px 0 20px;">Available / Not Available percentages are relative to Completed surveys. New Restaurant Leads is a separate count, not part of the outlet survey total above.</div>
+  <div class="stat-note" style="margin:-14px 0 20px;">Available / Not Available percentages are relative to Completed surveys. Total Live Outlets in Market = New Restaurant Leads + Available Restaurants — the combined pool of confirmed, live-billing-relevant outlets across both sheets.</div>
 
   <!-- OUTLET MATRIX -->
   <div class="section-head">
@@ -876,33 +915,6 @@
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Billing software usage — New Restaurant Leads, city-wise</h3>
-    <div style="overflow-x:auto;"><table class="excel-table" id="softwareListRest"></table></div>
-  </div>
-
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Competitive Positioning — New Restaurant Leads</h3>
-    <div class="legend-row">
-      <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
-      <span><span class="metric-dot" style="background:#8F641D;"></span>Manual/Offline (opportunity)</span>
-      <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
-      <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
-    </div>
-    <div class="table-with-insight">
-      <div style="overflow-x:auto;"><table class="excel-table" id="restCompetitiveTable"></table></div>
-      <div class="insight-panel" id="restCompetitiveInsight"></div>
-    </div>
-    <div class="stat-note">Percentages are relative to total leads found in that city. Every row here is already a confirmed restaurant — there's no "available" filter to apply first.</div>
-  </div>
-
-  <div class="card" style="margin-bottom:16px;">
-    <h3>City-wise lead numbers</h3>
-    <div style="overflow-x:auto;margin-bottom:20px;">
-      <table class="city-table" id="cityTableRest"></table>
-    </div>
-  </div>
-
   <!-- SURVEY SUMMARY TAB — internal/ALL view only (master summary, not filterable per company) -->
   <div id="surveySummarySection" style="display:none;">
 
@@ -957,10 +969,15 @@
 
     <div class="card" style="margin-bottom:16px;">
       <h3>Software Usage Matrix</h3>
+      <div class="city-select-row">
+        <label for="summarySoftwareUsageSelect">Show:</label>
+        <select id="summarySoftwareUsageSelect"></select>
+      </div>
       <div class="table-with-insight">
         <table class="excel-table" id="summarySoftwareUsage"></table>
         <div class="insight-panel" id="summarySoftwareUsageInsight"></div>
       </div>
+      <div class="stat-note">Cloud / Offline / Not Answered / Other Local Software are derived from the Billing System Usage rows below, grouped by type — same source, same numbers, just re-grouped by city.</div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
@@ -1600,7 +1617,8 @@ function renderOutletMatrix(survey, rest){
     const notAvailable = visited - available;
     html += cardHTML(c, totalOut, visited, available, notAvailable, false);
   });
-  html += cardHTML('Total', totalOutletsSum, grand.visited, grand.available, grand.visited - grand.available, true);
+  // No repeated "Total" tile here anymore — that exact figure now lives in
+  // the single overview card at the top of the page instead of twice.
 
   el.innerHTML = html;
 }
@@ -1995,28 +2013,76 @@ function renderSurveySummaryTab(grid){
     }
   }
 
-  if(data.softwareUsage){
-    const el = document.getElementById('summarySoftwareUsage');
-    if(el){
-      const colors = { 'Cloud':'#B44736', 'Offline':'#8F641D', 'Not Answered':'#6B6FA8', 'Other Local Software':'#5C7A89' };
-      let html = '<thead><tr><th style="text-align:left;">Category</th><th>Share</th></tr></thead><tbody>';
-      html += data.softwareUsage.map(r => {
-        const color = colors[r.label] || '#8F641D';
-        return `<tr><td>${metricDot(color)}${r.label}</td><td><span class="pct-pill" style="background:${color}22;color:${color};">${r.pctText || '0%'}</span></td></tr>`;
-      }).join('');
-      html += '</tbody>';
-      el.innerHTML = html;
-    }
-    const byLabel = {};
-    data.softwareUsage.forEach(r => { byLabel[r.label] = r.pctText; });
-    renderInsightBlock('summarySoftwareUsageInsight', byLabel['Offline'] || '—',
-      `of restaurants surveyed still use offline / pen-paper billing`,
-      [`Cloud software (includes Petpooja): <b>${byLabel['Cloud']||'—'}</b>.`,
-       `Declined to share their billing setup: <b>${byLabel['Not Answered']||'—'}</b>.`,
-       `Other local/regional software: <b>${byLabel['Other Local Software']||'—'}</b>.`]);
-  }
+  wireSoftwareUsageMatrix('summarySoftwareUsage', 'summarySoftwareUsageSelect', data.billingExisting);
 
   wireBillingDetailTable('summaryBillingExisting', 'summaryBillingExistingSelect', data.billingExisting);
+}
+
+// The sheet's own Software Usage Matrix (Cloud / Offline / Not Answered /
+// Other Local Software) only ever came as one overall total — no per-city
+// columns. But every software row underneath it in Billing System Usage —
+// Existing Data already carries a per-city breakdown plus a Cloud/Offline
+// tag, "Declined to Share" (= Not Answered) and "Others" (= Other Local
+// Software) rows included. Summing those by tag, per city, reproduces the
+// sheet's own overall percentages exactly (verified against the snapshot:
+// 29.30% / 40.80% / 26.00% / 4.00%), so the same numbers just get a city
+// dropdown instead of being locked to the combined total.
+function computeSoftwareUsageByCity(billingRows){
+  const CATS = [
+    { key:'cloud', label:'Cloud', color:'#B44736' },
+    { key:'offline', label:'Offline', color:'#8F641D' },
+    { key:'notAnswered', label:'Not Answered', color:'#6B6FA8' },
+    { key:'other', label:'Other Local Software', color:'#5C7A89' },
+  ];
+  const totalRow = billingRows.find(r => r.label === 'Total');
+  const notAnsweredRow = billingRows.find(r => r.label === 'Declined to Share');
+  const otherRow = billingRows.find(r => r.label === 'Others');
+
+  return function(choice){
+    const val = (row) => row ? (choice === '__TOTAL__' ? row.total : (row.byCity[choice] || 0)) : 0;
+    let cloud = 0, offline = 0;
+    billingRows.forEach(r => {
+      if(r.label === 'Total' || r.label === 'Declined to Share' || r.label === 'Others') return;
+      if(r.tag === 'Cloud') cloud += val(r);
+      else if(r.tag === 'Offline') offline += val(r);
+    });
+    const notAnswered = val(notAnsweredRow);
+    const other = val(otherRow);
+    const denom = val(totalRow) || (cloud + offline + notAnswered + other) || 1;
+    const sums = { cloud, offline, notAnswered, other };
+    return CATS.map(c => ({ ...c, val: sums[c.key], pct: pct(sums[c.key], denom) }));
+  };
+}
+
+function wireSoftwareUsageMatrix(tableId, selectId, billingRows){
+  const table = document.getElementById(tableId);
+  const sel = document.getElementById(selectId);
+  if(!table || !sel || !billingRows) return;
+
+  sel.innerHTML = '<option value="__TOTAL__">Total (all cities)</option>' +
+    SUMMARY_CITIES.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  const sumFor = computeSoftwareUsageByCity(billingRows);
+
+  function render(choice){
+    const cats = sumFor(choice);
+    let html = '<thead><tr><th style="text-align:left;">Category</th><th>Share</th></tr></thead><tbody>';
+    html += cats.map(c => `<tr><td>${metricDot(c.color)}${c.label}</td><td><span class="pct-pill" style="background:${c.color}22;color:${c.color};">${c.pct}%</span></td></tr>`).join('');
+    html += '</tbody>';
+    table.innerHTML = html;
+
+    const byLabel = {};
+    cats.forEach(c => { byLabel[c.label] = c.pct; });
+    const scope = choice === '__TOTAL__' ? 'surveyed so far' : `surveyed in <b>${choice}</b>`;
+    renderInsightBlock('summarySoftwareUsageInsight', (byLabel['Offline'] ?? '—')+'%',
+      `of restaurants ${scope} still use offline / pen-paper billing`,
+      [`Cloud software (includes Petpooja): <b>${byLabel['Cloud'] ?? '—'}%</b>.`,
+       `Declined to share their billing setup: <b>${byLabel['Not Answered'] ?? '—'}%</b>.`,
+       `Other local/regional software: <b>${byLabel['Other Local Software'] ?? '—'}%</b>.`]);
+  }
+
+  sel.onchange = () => render(sel.value);
+  render('__TOTAL__');
 }
 
 // Detailed billing tables keep their natural orientation (software as rows —
@@ -2418,6 +2484,11 @@ function buildKpis(survey, rest){
   const availPct = pct(availYes, totalSurvey || 1);
   const notAvailPct = pct(availNo, totalSurvey || 1);
 
+  // The market-size equation the user actually wants highlighted: every
+  // new lead captured plus every already-surveyed restaurant confirmed
+  // Available — the full pool of live, billing-relevant outlets right now.
+  const totalLiveOutlets = totalRest + availYes;
+
   document.getElementById('kpiGrid').innerHTML = `
     <div class="overview-card outlet-card outlet-total-card">
       <div class="outlet-card-head">
@@ -2425,32 +2496,55 @@ function buildKpis(survey, rest){
         <span class="outlet-total">${fmt(totalOutletsSum)} outlets</span>
       </div>
 
-      <div class="outlet-hero">
-        <div class="outlet-hero-num" style="color:#8FC1E8;">${visitedPct}%</div>
-        <div class="outlet-hero-label">of outlets visited</div>
-      </div>
-      <div class="outlet-progress-track" style="background:rgba(255,255,255,.14);">
-        <div class="outlet-progress-fill" style="width:${visitedPct}%;background:#8FC1E8;"></div>
-      </div>
-      <div class="outlet-progress-legend">
-        <span><i style="background:#8FC1E8;"></i>Completed&nbsp;<b>${fmt(totalSurvey)}</b>&nbsp;(${visitedPct}%)</span>
-        <span><i style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);"></i>Pending&nbsp;<b>${fmt(remaining)}</b>&nbsp;(${pendingPct}%)</span>
+      <div class="overview-body">
+        <div class="overview-hero">
+          <div class="outlet-hero-num" style="color:#8FC1E8;">${visitedPct}%</div>
+          <div class="outlet-hero-label">of outlets visited</div>
+          <div class="outlet-progress-track" style="background:rgba(255,255,255,.14);">
+            <div class="outlet-progress-fill" style="width:${visitedPct}%;background:#8FC1E8;"></div>
+          </div>
+        </div>
+
+        <div class="overview-col">
+          <div class="overview-col-title">Completed vs Pending</div>
+          <div class="overview-stat-row">
+            <span class="l">Completed</span>
+            <span class="n">${fmt(totalSurvey)} <span class="pct-pill" style="background:#8FC1E855;color:#D8ECFA;">${visitedPct}%</span></span>
+          </div>
+          <div class="overview-stat-row">
+            <span class="l">Pending</span>
+            <span class="n">${fmt(remaining)} <span class="pct-pill" style="background:rgba(255,255,255,.18);color:#D7E2EC;">${pendingPct}%</span></span>
+          </div>
+        </div>
+
+        <div class="overview-col">
+          <div class="overview-col-title">Of Completed — Available?</div>
+          <div class="overview-stat-row">
+            <span class="l">Available</span>
+            <span class="n">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${availPct}%</span></span>
+          </div>
+          <div class="overview-stat-row">
+            <span class="l">Not Available</span>
+            <span class="n">${fmt(availNo)} <span class="pct-pill" style="background:#B4473655;color:#F5B3A6;">${notAvailPct}%</span></span>
+          </div>
+        </div>
       </div>
 
-      <div class="outlet-substats-v2">
-        <div class="outlet-substat-row">
-          <span class="l">Available</span>
-          <span class="n">${fmt(availYes)} <span class="pct-pill" style="background:#1E6B6755;color:#8FE0D6;">${availPct}%</span></span>
+      <div class="overview-equation">
+        <div class="overview-eq-item">
+          <span class="n">${fmt(totalRest)}</span>
+          <span class="l">New Restaurant Leads</span>
         </div>
-        <div class="outlet-substat-row">
-          <span class="l">Not Available</span>
-          <span class="n">${fmt(availNo)} <span class="pct-pill" style="background:#B4473655;color:#F5B3A6;">${notAvailPct}%</span></span>
+        <span class="overview-eq-op">+</span>
+        <div class="overview-eq-item">
+          <span class="n">${fmt(availYes)}</span>
+          <span class="l">Available Restaurants</span>
         </div>
-      </div>
-
-      <div class="overview-leads-row">
-        <span class="l">New Restaurant Leads<span class="overview-leads-note">Captured separately — not part of the outlet total above</span></span>
-        <span class="n">${fmt(totalRest)}</span>
+        <span class="overview-eq-op">=</span>
+        <div class="overview-eq-item highlight">
+          <span class="n">${fmt(totalLiveOutlets)}</span>
+          <span class="l">Total Live Outlets in Market — Your Target</span>
+        </div>
       </div>
     </div>
   `;
@@ -2576,11 +2670,7 @@ function renderRestaurantSection(rest){
   // Leads overview (no availability split in this sheet)
   renderLeadsOverview('leadsOverviewRest', rest);
 
-  // Billing software usage, city-wise
-  renderSoftwareUsageTable('softwareListRest', rest, 'Existing Software Final', 'City');
-
-  // New leads by city — a simple count per city, replacing the old
-  // Single/Chain outlet-type chart with something more directly useful.
+  // New leads by city — count per city plus its share of total leads.
   const leadsByCity = {};
   CITY_ORDER.forEach(c => { leadsByCity[c] = 0; });
   let otherCount = 0;
@@ -2591,16 +2681,13 @@ function renderRestaurantSection(rest){
   });
   let leadsHtml = '<thead><tr><th style="text-align:left;">City</th><th>New Leads</th></tr></thead><tbody>';
   CITY_ORDER.forEach(city => {
-    leadsHtml += `<tr><td>${city}</td><td class="cellval-plain">${fmt(leadsByCity[city])}</td></tr>`;
+    leadsHtml += `<tr><td>${city}</td>${barCell(leadsByCity[city], pct(leadsByCity[city], rest.length||1), '#8F641D')}</tr>`;
   });
   if(otherCount > 0){
-    leadsHtml += `<tr><td>Other</td><td class="cellval-plain">${fmt(otherCount)}</td></tr>`;
+    leadsHtml += `<tr><td>Other</td>${barCell(otherCount, pct(otherCount, rest.length||1), '#6B6FA8')}</tr>`;
   }
   leadsHtml += `<tr class="total-row"><td>Total</td><td class="cellval-plain">${fmt(rest.length)}</td></tr></tbody>`;
   document.getElementById('leadsByCity').innerHTML = leadsHtml;
-
-  // City-wise table
-  renderCityTableRest(rest);
 }
 
 let LOADED_SURVEY = [];
@@ -2696,7 +2783,6 @@ async function loadAll(isManual){
     renderAtAGlance(survey, rest);
     renderOutletMatrix(survey, rest);
     renderCompetitive(survey);
-    renderRestCompetitive(rest);
     renderSurveySection(survey);
     renderRestaurantSection(rest);
 
