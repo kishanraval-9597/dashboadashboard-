@@ -338,10 +338,6 @@
     box-shadow:0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 4px rgba(33,30,26,0.07), 0 10px 24px rgba(33,30,26,0.10);
     transition:box-shadow .2s ease, transform .2s ease;
   }
-  .highlight-card{
-    border:2px solid var(--brand);
-    box-shadow:0 1px 0 rgba(255,255,255,0.6) inset, 0 4px 8px rgba(44,74,110,0.12), 0 14px 30px rgba(44,74,110,0.14);
-  }
   .card:hover{
     box-shadow:0 1px 0 rgba(255,255,255,0.7) inset, 0 4px 8px rgba(33,30,26,0.10), 0 18px 36px rgba(33,30,26,0.15);
     transform:translateY(-1px);
@@ -754,14 +750,8 @@
     <div class="ticker" id="tickerEl"><span>Waiting on live feed…</span></div>
   </div>
 
-  <div class="card" style="margin-bottom:16px;">
-    <table class="excel-table" id="topCoverageTable" style="width:100%;"></table>
-  </div>
-  <div class="card" style="margin-bottom:16px;">
-    <table class="excel-table" id="topActivityTable" style="width:100%;"></table>
-  </div>
-  <div class="card" style="margin-bottom:16px;">
-    <table class="excel-table" id="topPlatformTable" style="width:100%;"></table>
+  <div class="kpi-grid" id="kpiGrid">
+    <!-- KPI cards injected here -->
   </div>
 
   <!-- OUTLET MATRIX -->
@@ -771,42 +761,6 @@
   </div>
   <div id="outletMatrixCards" class="outlet-cards"></div>
   <div class="stat-note" style="margin:-4px 0 16px;">"Total Outlets" is the addressable market size per city — a fixed reference figure, not derived from survey activity. Everything else updates live.</div>
-
-  <!-- KEY INSIGHTS — highlighted, since these two datasets matter most -->
-  <div class="section-head">
-    <span class="tag" style="background:var(--brand);">KEY INSIGHT</span>
-    <h2><span class="section-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2C4A6E" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></span>Billing System Usage — Existing Data</h2>
-    <span class="count">Master summary — same for every view, not company-filtered</span>
-  </div>
-
-  <div class="card highlight-card" style="margin-bottom:16px;">
-    <div class="city-select-row">
-      <label for="topBillingSelect">Show:</label>
-      <select id="topBillingSelect"></select>
-    </div>
-    <div class="table-with-insight">
-      <div style="overflow-x:auto;"><table class="excel-table" id="topBillingTable"></table></div>
-      <div class="insight-panel" id="topBillingInsight"></div>
-    </div>
-  </div>
-
-  <div class="section-head">
-    <span class="tag" style="background:var(--brand);">KEY INSIGHT</span>
-    <h2><span class="section-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2C4A6E" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></span>Software Usage Matrix — live, city-wise</h2>
-    <span class="count">From live Survey Data — updates automatically</span>
-  </div>
-
-  <div class="card highlight-card" style="margin-bottom:16px;">
-    <div class="city-select-row">
-      <label for="liveSoftwareSelect">Show:</label>
-      <select id="liveSoftwareSelect"></select>
-    </div>
-    <div class="table-with-insight">
-      <div style="overflow-x:auto;"><table class="excel-table" id="liveSoftwareTable"></table></div>
-      <div class="insight-panel" id="liveSoftwareInsight"></div>
-    </div>
-    <div class="insight-panel" id="liveSoftwareOtherNames" style="margin-top:16px;"></div>
-  </div>
 
   <!-- COMPETITIVE POSITIONING -->
   <div class="section-head">
@@ -820,9 +774,8 @@
       <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
       <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
     </div>
-    <div class="table-with-insight">
-      <div style="overflow-x:auto;"><table class="excel-table" id="competitiveTable"></table></div>
-      <div class="insight-panel" id="competitiveInsight"></div>
+    <div style="overflow-x:auto;">
+      <table class="excel-table" id="competitiveTable"></table>
     </div>
     <div class="stat-note">Percentages are relative to that city's Available count.</div>
   </div>
@@ -868,6 +821,26 @@
       <h3>New leads by city</h3>
       <table class="excel-table" id="leadsByCity"></table>
     </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h3>Billing software usage — New Restaurant Leads, city-wise</h3>
+    <div style="overflow-x:auto;"><table class="excel-table" id="softwareListRest"></table></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <h3>Competitive Positioning — New Restaurant Leads</h3>
+    <div class="legend-row">
+      <span><span class="metric-dot" style="background:#1E6B67;"></span>Petpooja (strength)</span>
+      <span><span class="metric-dot" style="background:#8F641D;"></span>Manual/Offline (opportunity)</span>
+      <span><span class="metric-dot" style="background:#B44736;"></span>Cloud Competition (threat)</span>
+      <span><span class="metric-dot" style="background:#6B6FA8;"></span>Not Answered</span>
+    </div>
+    <div class="table-with-insight">
+      <div style="overflow-x:auto;"><table class="excel-table" id="restCompetitiveTable"></table></div>
+      <div class="insight-panel" id="restCompetitiveInsight"></div>
+    </div>
+    <div class="stat-note">Percentages are relative to total leads found in that city. Every row here is already a confirmed restaurant — there's no "available" filter to apply first.</div>
   </div>
 
   <div class="card" style="margin-bottom:16px;">
@@ -1518,6 +1491,8 @@ function renderOutletMatrix(survey, rest){
 
   function cardHTML(city, totalOut, visited, available, notAvailable, isTotal){
     const visitedPct = pct(visited, totalOut||1);
+    const availPct = pct(available, visited||1);
+    const notAvailPct = pct(notAvailable, visited||1);
     const pending = Math.max(totalOut - visited, 0);
     const pendingPct = pct(pending, totalOut||1);
     // City cards use progressTier — teal/amber/brick meaning strong/mid/early
@@ -1530,6 +1505,8 @@ function renderOutletMatrix(survey, rest){
     // used on the white city cards.
     const ringColor = isTotal ? '#8FC1E8' : accent;
     const trackBg = isTotal ? 'rgba(255,255,255,.14)' : '#EFEAE0';
+    const availPillStyle = isTotal ? 'background:#1E6B6755;color:#8FE0D6;' : 'background:#1E6B6722;color:#1E6B67;';
+    const notAvailPillStyle = isTotal ? 'background:#B4473655;color:#F5B3A6;' : 'background:#B4473622;color:#B44736;';
     return `
       <div class="outlet-card${isTotal ? ' outlet-total-card' : ''}" style="--accent:${accent};">
         <div class="outlet-card-head">
@@ -1547,6 +1524,17 @@ function renderOutletMatrix(survey, rest){
         <div class="outlet-progress-legend">
           <span><i style="background:${ringColor};"></i>Visited&nbsp;<b>${fmt(visited)}</b></span>
           <span><i style="background:${trackBg};border:1px solid ${isTotal ? 'rgba(255,255,255,.3)' : 'var(--line)'};"></i>Pending&nbsp;<b>${fmt(pending)}</b>&nbsp;(${pendingPct}%)</span>
+        </div>
+
+        <div class="outlet-substats-v2">
+          <div class="outlet-substat-row">
+            <span class="l">Available</span>
+            <span class="n">${fmt(available)} <span class="pct-pill" style="${availPillStyle}">${availPct}%</span></span>
+          </div>
+          <div class="outlet-substat-row">
+            <span class="l">Not Available</span>
+            <span class="n">${fmt(notAvailable)} <span class="pct-pill" style="${notAvailPillStyle}">${notAvailPct}%</span></span>
+          </div>
         </div>
       </div>`;
   }
@@ -1692,29 +1680,6 @@ function renderCompetitive(survey){
 
   html += '</tbody>';
   el.innerHTML = html;
-
-  // Insight: which city has the strongest/weakest Petpooja presence, live
-  let bestCity = null, bestPct = -1, worstCity = null, worstPct = 101;
-  CITY_ORDER.forEach(c => {
-    if(!data[c].available) return;
-    const p = pct(data[c].petpooja, data[c].available);
-    if(p > bestPct){ bestPct = p; bestCity = c; }
-    if(p < worstPct){ worstPct = p; worstCity = c; }
-  });
-  if(bestCity){
-    const overallPct = pct(grand.petpooja, grand.available||1);
-    const ranked = CITY_ORDER
-      .filter(c => data[c].available > 0)
-      .map(c => ({ name:c, sortVal: pct(data[c].petpooja, data[c].available) }))
-      .sort((a,b) => b.sortVal - a.sortVal)
-      .map(r => ({ name:r.name, value:r.sortVal+'%', color:'#1E6B67' }));
-    renderInsightBlock('competitiveInsight', overallPct+'%',
-      `Petpooja's overall share across all available restaurants surveyed`,
-      [`Strongest in <b>${bestCity}</b> (${bestPct}%).`,
-       `Weakest in <b>${worstCity}</b> (${worstPct}%) — where Manual/Offline billing still dominates instead.`,
-       `<b>${fmt(grand.manualOffline)}</b> available restaurants still use Manual/Offline billing.`],
-      'Petpooja presence, all cities ranked', ranked);
-  }
 }
 
 // Same competitive breakdown, but for New Restaurant Leads. There's no
@@ -1966,18 +1931,16 @@ function renderSurveySummaryTab(grid){
   }
 
   wireBillingDetailTable('summaryBillingExisting', 'summaryBillingExistingSelect', data.billingExisting);
-  wireBillingDetailTable('topBillingTable', 'topBillingSelect', data.billingExisting, 'topBillingInsight');
 }
 
 // Detailed billing tables keep their natural orientation (software as rows —
 // transposing these would trade 6 city-columns for 11+ software-columns,
 // which is worse, not better). A city dropdown lets you drill into any one
 // city instead of only seeing the Total.
-function wireBillingDetailTable(tableId, selectId, rows, insightId){
+function wireBillingDetailTable(tableId, selectId, rows){
   const table = document.getElementById(tableId);
   const sel = document.getElementById(selectId);
   if(!table || !sel || !rows) return;
-  insightId = insightId || 'summaryBillingExistingInsight';
 
   sel.innerHTML = '<option value="__TOTAL__">Total (all cities)</option>' +
     SUMMARY_CITIES.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -2008,7 +1971,7 @@ function wireBillingDetailTable(tableId, selectId, rows, insightId){
 
     softwareRows.sort((a,b) => b.val - a.val);
     const top = softwareRows.slice(0, 5);
-    const insightEl = document.getElementById(insightId);
+    const insightEl = document.getElementById('summaryBillingExistingInsight');
     if(insightEl && top.length){
       const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
       const topLabel = top[0].label, topVal = top[0].val;
@@ -2290,8 +2253,7 @@ function renderCityTableSurvey(rows){
 function cityAnalyticsRest(rows){
   const map = {};
   rows.forEach(r => {
-    let city = normalizeCity(r['City']);
-    if(!CITY_ORDER.includes(city)) city = 'Other';
+    const city = normalizeCity(r['City']);
     if(!map[city]) map[city] = { total:0, swiggy:0, zomato:0, softwareMap:{} };
     const m = map[city];
     m.total++;
@@ -2308,7 +2270,6 @@ function cityAnalyticsRest(rows){
 function renderCityTableRest(rows){
   const data = cityAnalyticsRest(rows);
   const topRows = data.slice(0, 15);
-  const grandTotal = rows.length || 1;
   document.getElementById('cityTableRest').innerHTML = `
     <thead><tr>
       <th>City</th><th class="num">Total</th><th class="num">Swiggy live</th>
@@ -2320,7 +2281,7 @@ function renderCityTableRest(rows){
         return `
         <tr>
           <td>${city}</td>
-          <td class="num">${fmt(d.total)} <span class="pct-pill" style="background:var(--brand-tint);color:var(--brand-deep);">${pct(d.total, grandTotal)}%</span></td>
+          <td class="num">${fmt(d.total)}</td>
           <td class="num">${fmt(d.swiggy)}</td>
           <td class="num">${fmt(d.zomato)}</td>
           <td>${topSoft ? topSoft[0] + ' (' + fmt(topSoft[1]) + ')' : '—'}</td>
@@ -2349,208 +2310,35 @@ function wireCitySelect(selectId, canvasId, cityData, rows, cityKey, softwareKey
   renderFor('__ALL__');
 }
 
-// Live Software Usage Matrix, with a city filter — unlike Tab 3's version
-// (which comes from a hand-maintained snapshot with no per-city split at
-// all), this is built fresh from Survey Data every load, so it can be
-// broken down by city. It reuses the same Cloud/Offline/Not-Answered
-// classification already used for Competitive Positioning, just regrouped:
-// Petpooja + other cloud POS competitors both count as "Cloud" here, since
-// that matches how Tab 3's own Software Usage Matrix defines Cloud.
-// Software names Tab 3's own Billing System Usage table already identifies
-// by name as cloud POS competitors (Rista POS, Dotpe, TM Bill, EZO, Own
-// Software, Posist/Restroworks). Anything else that isn't Petpooja, isn't in
-// this list, and isn't offline/manual or a non-answer is presumed to be an
-// unlisted regional/local competitor — which is exactly the category being
-// tracked here, so the actual company names are kept, not just a percentage.
-const KNOWN_CLOUD_COMPETITORS = new Set([
-  'rista pos', 'dotpe', 'rista pos/ dotpe', 'rista pos/dotpe',
-  'tm bill', 'tmbill', 'ezo', 'ecr', 'own software',
-  'posist', 'posist (restroworks)', 'restroworks',
-]);
-const KNOWN_CLOUD_COMPETITORS_COMPACT = new Set(
-  [...KNOWN_CLOUD_COMPETITORS].map(s => s.replace(/[\s\-_/]/g, ''))
-);
-
-function computeLiveSoftwareMatrix(survey){
-  const byCity = {};
-  const grand = { cloud:0, offline:0, notAnswered:0, otherLocal:0, total:0 };
-  const otherLocalNamesByCity = {};
-  const otherLocalNamesGrand = {};
-  CITY_ORDER.forEach(c => { byCity[c] = { cloud:0, offline:0, notAnswered:0, otherLocal:0, total:0 }; otherLocalNamesByCity[c] = {}; });
-  survey.forEach(r => {
-    const city = normalizeCity(r['Region']);
-    const raw = (r['Ex Software'] || '').toString().trim();
-    const s = raw.toLowerCase();
-    const sCompact = s.replace(/[\s\-_/]/g, ''); // for matching spacing/punctuation variants like 'TMBill' vs 'TM Bill'
-    let cat;
-    if(NOT_ANSWERED_SOFTWARE.has(s)) cat = 'notAnswered';
-    else if(OFFLINE_SOFTWARE.has(s)) cat = 'offline';
-    else if(s === 'petpooja' || KNOWN_CLOUD_COMPETITORS.has(s) || KNOWN_CLOUD_COMPETITORS_COMPACT.has(sCompact)) cat = 'cloud';
-    else cat = 'otherLocal';
-
-    grand.total++;
-    grand[cat]++;
-    if(cat === 'otherLocal'){
-      otherLocalNamesGrand[raw] = (otherLocalNamesGrand[raw] || 0) + 1;
-    }
-    if(byCity[city]){
-      byCity[city].total++;
-      byCity[city][cat]++;
-      if(cat === 'otherLocal'){
-        otherLocalNamesByCity[city][raw] = (otherLocalNamesByCity[city][raw] || 0) + 1;
-      }
-    }
-  });
-  return { byCity, grand, otherLocalNamesByCity, otherLocalNamesGrand };
-}
-
-function renderLiveSoftwareMatrix(survey){
-  const { byCity, grand, otherLocalNamesByCity, otherLocalNamesGrand } = computeLiveSoftwareMatrix(survey);
-  const selectEl = document.getElementById('liveSoftwareSelect');
-  const tableEl = document.getElementById('liveSoftwareTable');
-  if(!selectEl || !tableEl) return;
-
-  function render(choice){
-    const data = choice === '__TOTAL__' ? grand : (byCity[choice] || { cloud:0, offline:0, notAnswered:0, otherLocal:0, total:0 });
-    const namesMap = choice === '__TOTAL__' ? otherLocalNamesGrand : (otherLocalNamesByCity[choice] || {});
-    const total = data.total || 0;
-    const rows = [
-      { label:'Cloud (includes Petpooja)', val:data.cloud, color:'#B44736' },
-      { label:'Offline / Manual', val:data.offline, color:'#8F641D' },
-      { label:'Other Local Software', val:data.otherLocal, color:'#5C7A89' },
-      { label:'Not Answered', val:data.notAnswered, color:'#6B6FA8' },
-    ];
-    let html = '<thead><tr><th style="text-align:left;">Category</th><th>Count</th><th>Share</th></tr></thead><tbody>';
-    rows.forEach(r => {
-      html += `<tr><td>${metricDot(r.color)}${r.label}</td><td class="cellval-plain">${fmt(r.val)}</td><td><span class="pct-pill" style="background:${r.color}22;color:${r.color};">${pct(r.val, total||1)}%</span></td></tr>`;
-    });
-    html += `<tr class="total-row"><td>Total</td><td class="cellval-plain">${fmt(total)}</td><td></td></tr></tbody>`;
-    tableEl.innerHTML = html;
-
-    const top = [...rows].sort((a,b) => b.val - a.val)[0];
-    const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
-    let rankTitle, rankItems;
-    if(choice === '__TOTAL__'){
-      rankTitle = 'Cloud share, all cities ranked';
-      rankItems = CITY_ORDER
-        .filter(c => byCity[c].total > 0)
-        .map(c => ({ name:c, sortVal: pct(byCity[c].cloud, byCity[c].total||1) }))
-        .sort((a,b) => b.sortVal - a.sortVal)
-        .map(r => ({ name:r.name, value:r.sortVal+'%', color:'#B44736' }));
-    }
-    renderInsightBlock('liveSoftwareInsight', pct(top.val, total||1)+'%',
-      `of restaurants surveyed ${label} fall under <b>${top.label}</b>`,
-      [`Cloud (incl. Petpooja): <b>${pct(data.cloud, total||1)}%</b> (${fmt(data.cloud)}).`,
-       `Offline/manual: <b>${pct(data.offline, total||1)}%</b> (${fmt(data.offline)}).`,
-       `Other local software: <b>${pct(data.otherLocal, total||1)}%</b> (${fmt(data.otherLocal)}).`,
-       `Not answered: <b>${pct(data.notAnswered, total||1)}%</b> (${fmt(data.notAnswered)}).`],
-      rankTitle, rankItems);
-
-    // The actual regional/local company names — this is the whole point of
-    // tracking this category separately, so name them rather than just show
-    // a percentage.
-    const namesEl = document.getElementById('liveSoftwareOtherNames');
-    if(namesEl){
-      const named = Object.entries(namesMap).sort((a,b) => b[1]-a[1]);
-      if(named.length){
-        namesEl.innerHTML = `
-          <div class="insight-title">🏷️ Regional / local companies found ${label}</div>
-          <ul class="insight-ranked">
-            ${named.map(([name,count],i) => `<li><span class="insight-rank">${i+1}</span><span class="insight-rank-name">${name}</span><span class="insight-rank-val" style="color:#5C7A89;">${fmt(count)} <span style="color:var(--ink-soft);font-weight:400;">(${pct(count, data.otherLocal||1)}%)</span></span></li>`).join('')}
-          </ul>`;
-      } else {
-        namesEl.innerHTML = `<div class="insight-title">🏷️ Regional / local companies found ${label}</div><div style="font-size:12.5px;color:var(--ink-soft);">None recorded — every response fell into a known category.</div>`;
-      }
-    }
-  }
-
-  if(selectEl.options.length === 0){
-    selectEl.innerHTML = '<option value="__TOTAL__">Total (all cities)</option>' +
-      CITY_ORDER.map(c => `<option value="${c}">${c}</option>`).join('');
-    selectEl.addEventListener('change', () => render(selectEl.value));
-  }
-  render(selectEl.value || '__TOTAL__');
-}
-
 function buildKpis(survey, rest){
-  const { byCity, grand } = computeOutletMatrix(survey, rest);
+  const totalSurvey = survey.length;
+  const totalRest = rest.length;
+
+  const availYes = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='yes').length;
+  const availNo = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='no').length;
 
   // Total addressable market — a fixed reference figure (not derived from
-  // survey activity), so people can see the target alongside progress
-  // against it, city by city.
+  // survey activity, same note as the Outlet Matrix cards below), so people
+  // can see the target alongside progress against it, not just progress alone.
   let totalOutletsSum = 0;
   CITY_ORDER.forEach(c => { totalOutletsSum += TOTAL_OUTLETS[c] || 0; });
+  const remaining = Math.max(totalOutletsSum - totalSurvey, 0);
 
-  let coverageHtml = '<thead><tr><th style="text-align:left;">Outlet Coverage</th><th>Total Outlets</th><th>Completed</th><th>Pending</th></tr></thead><tbody>';
-  CITY_ORDER.forEach(c => {
-    const totalOut = TOTAL_OUTLETS[c] || 0;
-    const visited = byCity[c].visited;
-    const pending = Math.max(totalOut - visited, 0);
-    coverageHtml += `<tr><td>${c}</td><td class="cellval-plain">${fmt(totalOut)}</td>` +
-      barCell(visited, pct(visited, totalOut||1), '#1E6B67') +
-      barCell(pending, pct(pending, totalOut||1), '#B44736') +
-      '</tr>';
-  });
-  const totalVisited = grand.visited;
-  const totalPending = Math.max(totalOutletsSum - totalVisited, 0);
-  coverageHtml += `<tr class="total-row"><td>Total</td><td class="cellval-plain">${fmt(totalOutletsSum)}</td>` +
-    barCell(totalVisited, pct(totalVisited, totalOutletsSum||1), '#1E6B67') +
-    barCell(totalPending, pct(totalPending, totalOutletsSum||1), '#B44736') +
-    '</tr></tbody>';
-  document.getElementById('topCoverageTable').innerHTML = coverageHtml;
+  const kpis = [
+    { num: fmt(totalOutletsSum), lbl:'Total outlets to survey', accent:'brand' },
+    { num: fmt(remaining), lbl:'Outlets remaining to visit', accent:'brand' },
+    { num: fmt(totalSurvey), lbl:'Total surveys logged', accent:'' },
+    { num: fmt(totalRest), lbl:'New restaurant leads', accent:'' },
+    { num: fmt(availYes), lbl:'Restaurants available', accent:'teal' },
+    { num: fmt(availNo), lbl:'Restaurants not available', accent:'brick' },
+  ];
 
-  let activityHtml = '<thead><tr><th style="text-align:left;">Restaurant Activity</th><th>Available</th><th>New Restaurants</th><th>Total Active</th></tr></thead><tbody>';
-  CITY_ORDER.forEach(c => {
-    const avail = byCity[c].available;
-    const newR = byCity[c].newRest;
-    const totalActive = avail + newR;
-    activityHtml += `<tr><td>${c}</td>` +
-      barCell(avail, pct(avail, totalActive||1), '#1E6B67') +
-      barCell(newR, pct(newR, totalActive||1), '#2C4A6E') +
-      `<td class="cellval-plain">${fmt(totalActive)}</td></tr>`;
-  });
-  const totalActiveAll = grand.available + grand.newRest;
-  activityHtml += `<tr class="total-row"><td>Total</td>` +
-    barCell(grand.available, pct(grand.available, totalActiveAll||1), '#1E6B67') +
-    barCell(grand.newRest, pct(grand.newRest, totalActiveAll||1), '#2C4A6E') +
-    `<td class="cellval-plain">${fmt(totalActiveAll)}</td></tr></tbody>`;
-  document.getElementById('topActivityTable').innerHTML = activityHtml;
-}
-
-// Live Zomato/Swiggy presence, city-wise — same style as the tables above,
-// built fresh from Survey Data every load.
-function buildTopPlatformTable(survey){
-  const el = document.getElementById('topPlatformTable');
-  if(!el) return;
-  const byCity = {};
-  CITY_ORDER.forEach(c => { byCity[c] = { total:0, zomato:0, swiggy:0 }; });
-  const grand = { total:0, zomato:0, swiggy:0 };
-  survey.forEach(r => {
-    const city = normalizeCity(r['Region']);
-    grand.total++;
-    const z = (r['Zomato Live']||'').trim().toLowerCase() === 'yes';
-    const s = (r['Swiggy Live']||'').trim().toLowerCase() === 'yes';
-    if(z) grand.zomato++;
-    if(s) grand.swiggy++;
-    if(!byCity[city]) return;
-    byCity[city].total++;
-    if(z) byCity[city].zomato++;
-    if(s) byCity[city].swiggy++;
-  });
-
-  let html = '<thead><tr><th style="text-align:left;">Platform Presence</th><th>Live on Zomato</th><th>Live on Swiggy</th></tr></thead><tbody>';
-  CITY_ORDER.forEach(c => {
-    const d = byCity[c];
-    html += `<tr><td>${c}</td>` +
-      barCell(d.zomato, pct(d.zomato, d.total||1), '#1E6B67') +
-      barCell(d.swiggy, pct(d.swiggy, d.total||1), '#B44736') +
-      '</tr>';
-  });
-  html += `<tr class="total-row"><td>Total</td>` +
-    barCell(grand.zomato, pct(grand.zomato, grand.total||1), '#1E6B67') +
-    barCell(grand.swiggy, pct(grand.swiggy, grand.total||1), '#B44736') +
-    '</tr></tbody>';
-  el.innerHTML = html;
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k => `
+    <div class="kpi ${k.accent ? 'accent-'+k.accent : ''}">
+      <div class="num">${k.num}</div>
+      <div class="lbl">${k.lbl}</div>
+    </div>
+  `).join('');
 }
 
 function buildTicker(survey, rest){
@@ -2673,6 +2461,9 @@ function renderRestaurantSection(rest){
   // Leads overview (no availability split in this sheet)
   renderLeadsOverview('leadsOverviewRest', rest);
 
+  // Billing software usage, city-wise
+  renderSoftwareUsageTable('softwareListRest', rest, 'Existing Software Final', 'City');
+
   // New leads by city — a simple count per city, replacing the old
   // Single/Chain outlet-type chart with something more directly useful.
   const leadsByCity = {};
@@ -2785,13 +2576,12 @@ async function loadAll(isManual){
     LOADED_REST = rest;
 
     buildKpis(survey, rest);
-    buildTopPlatformTable(survey);
-    renderLiveSoftwareMatrix(survey);
     buildTicker(survey, rest);
     renderDataThrough(survey, rest);
     renderAtAGlance(survey, rest);
     renderOutletMatrix(survey, rest);
     renderCompetitive(survey);
+    renderRestCompetitive(rest);
     renderSurveySection(survey);
     renderRestaurantSection(rest);
 
