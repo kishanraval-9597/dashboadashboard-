@@ -479,6 +479,28 @@
     gap:12px;
     flex:1 1 420px;
   }
+  .smx-grid-summary{
+    grid-column:1 / -1;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding-bottom:10px;
+    margin-bottom:2px;
+    border-bottom:2px solid var(--ink);
+  }
+  .smx-grid-summary .l{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--ink-soft);
+  }
+  .smx-grid-summary .n{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:24px;
+    color:var(--ink);
+  }
   .smx-tile{
     position:relative;
     background:var(--card);
@@ -2531,7 +2553,14 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
 
   function render(choice){
     const cats = sumFor(choice);
-    let html = cats.map(c => `
+    const totalAll = cats.reduce((sum, c) => sum + c.val, 0);
+
+    // Same "Total — all cities / Total — <city>" headline the Billing
+    // System Usage list already has, so the 4 tiles' percentages have a
+    // visible denominator instead of being unanchored numbers.
+    let html = `<div class="smx-grid-summary"><span class="l">Total${choice === '__TOTAL__' ? ' — all cities' : ' — '+choice}</span><span class="n">${fmt(totalAll)}</span></div>`;
+
+    html += cats.map(c => `
       <div class="smx-tile smx-tile-clickable${c.key === expandedKey ? ' smx-tile-active' : ''}" data-key="${c.key}" style="--accent:${c.color};">
         <div class="smx-tile-head">
           <span class="smx-tile-icon" style="background:${c.color};">${SMX_ICONS[c.key]}</span>
