@@ -3292,16 +3292,24 @@ function downloadExcel(){
 
 document.getElementById('downloadBtn').addEventListener('click', downloadExcel);
 
-// Quick-access tabs — purely a show/hide toggle; both panels' data is
-// already wired up by wireSoftwareUsageMatrix / wireBillingDetailTable
-// regardless of which one is visible, so switching is instant.
+// Quick-access tabs — both panels' data is already wired up by
+// wireSoftwareUsageMatrix / wireBillingDetailTable regardless of which is
+// visible, so switching is instant. Clicking an already-open button closes
+// it again (true open/close toggle), rather than always forcing one panel
+// open.
 document.querySelectorAll('.qa-tab').forEach(btn => {
   btn.addEventListener('click', () => {
+    const panel = document.getElementById(btn.dataset.panel);
+    const alreadyOpen = btn.classList.contains('active');
+
     document.querySelectorAll('.qa-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.quick-access-panel').forEach(p => { p.style.display = 'none'; });
-    btn.classList.add('active');
-    const panel = document.getElementById(btn.dataset.panel);
-    if(panel) panel.style.display = '';
+
+    if(!alreadyOpen && panel){
+      btn.classList.add('active');
+      panel.style.display = '';
+    }
+    // If it was already open, everything just stays closed — that's the toggle-off.
   });
 });
 
