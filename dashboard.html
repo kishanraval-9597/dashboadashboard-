@@ -538,6 +538,21 @@
     margin-top:12px;
   }
   .smx-tile-fill{ height:100%; border-radius:4px; }
+  .smx-tile-clickable{ cursor:pointer; }
+  .smx-tile-clickable:hover{ border-color:var(--accent); }
+  .smx-tile-active{
+    box-shadow:0 0 0 2px var(--accent, var(--brand)) inset, 0 1px 0 rgba(255,255,255,.6) inset, 0 2px 4px rgba(33,30,26,.06), 0 6px 16px rgba(33,30,26,.06);
+  }
+  .smx-tile-hint{
+    font-size:10px;
+    font-weight:600;
+    color:var(--ink-soft);
+    opacity:0;
+    margin-top:8px;
+    transition:opacity .15s ease;
+  }
+  .smx-tile-clickable:hover .smx-tile-hint,
+  .smx-tile-active .smx-tile-hint{ opacity:1; }
   @media (max-width:560px){
     .software-matrix-grid{ grid-template-columns:1fr; }
   }
@@ -1035,11 +1050,11 @@
 
   <div class="quick-access-card" id="quickAccessCard">
     <div class="quick-access-tabs">
-      <button type="button" class="qa-tab active" data-panel="qaPanelSoftware">📊 Software Usage Matrix</button>
+      <button type="button" class="qa-tab" data-panel="qaPanelSoftware">📊 Software Usage Matrix</button>
       <button type="button" class="qa-tab" data-panel="qaPanelBilling">🧾 Billing System Usage</button>
     </div>
 
-    <div class="quick-access-panel" id="qaPanelSoftware">
+    <div class="quick-access-panel" id="qaPanelSoftware" style="display:none;">
       <div class="city-select-row">
         <label for="qaSoftwareSelect">Show:</label>
         <select id="qaSoftwareSelect"></select>
@@ -2310,35 +2325,30 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
 
   const sumFor = computeSoftwareUsageByCity(billingRows);
 
-  function render(choice){
-    const cats = sumFor(choice);
-    container.innerHTML = cats.map(c => `
-      <div class="smx-tile" style="--accent:${c.color};">
-        <div class="smx-tile-head">
-          <span class="smx-tile-icon" style="background:${c.color};">${SMX_ICONS[c.key]}</span>
-          <span class="smx-tile-label">${c.label}</span>
-        </div>
-        <div class="smx-tile-num">${c.pct}%</div>
-        <div class="smx-tile-sub">${fmt(c.val)} restaurants</div>
-        <div class="smx-tile-track"><div class="smx-tile-fill" style="width:${c.pct}%;background:${c.color};"></div></div>
-      </div>
-    `).join('');
+  // Which category's city-wise ranking is currently shown in the insight
+  // panel. Starts on Offline (the opportunity metric), but clicking any
+  // tile switches the insight panel to that category's own city breakdown
+  // instead — nothing is computed until a tile is actually clicked.
+  let activeKey = 'offline';
 
+  function showCategoryInsight(choice, cats, key){
+    const cat = cats.find(c => c.key === key);
+    const label = cat ? cat.label : key;
     const byLabel = {};
     cats.forEach(c => { byLabel[c.label] = c.pct; });
 
-    // Rank every city by Offline share — surfaces where the Manual/Offline
-    // conversion opportunity is largest and where the market is already
-    // most modernized, not just the combined total.
+    // Rank every city by THIS category's share — not just Offline — so
+    // clicking Cloud, Not Answered, or Other each surface their own
+    // biggest/smallest city instead of always defaulting to Offline.
     const cityRanks = SUMMARY_CITIES
       .map(city => {
-        const offlineCat = sumFor(city).find(c => c.key === 'offline');
-        return { name: city, sortVal: offlineCat ? offlineCat.pct : 0 };
+        const cCat = sumFor(city).find(c => c.key === key);
+        return { name: city, sortVal: cCat ? cCat.pct : 0 };
       })
       .sort((a,b) => b.sortVal - a.sortVal);
     const highest = cityRanks[0];
     const lowest = cityRanks[cityRanks.length - 1];
-    const rankedOffline = cityRanks.map(r => ({ name: r.name, value: r.sortVal+'%', color:'#8F641D' }));
+    const ranked = cityRanks.map(r => ({ name: r.name, value: r.sortVal+'%', color: cat ? cat.color : '#8F641D' }));
 
     const scope = choice === '__TOTAL__' ? 'surveyed so far' : `surveyed in <b>${choice}</b>`;
     const bullets = [
@@ -2346,16 +2356,39 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
       `Declined to share their billing setup: <b>${byLabel['Not Answered'] ?? '—'}%</b>.`,
       `Other local/regional software: <b>${byLabel['Other Local Software'] ?? '—'}%</b>.`,
     ];
-    if(highest){
-      bullets.push(`Biggest opportunity: <b>${highest.name}</b> is <b>${highest.sortVal}%</b> Offline — the most room to convert.`);
-    }
-    if(lowest && highest && lowest.name !== highest.name){
-      bullets.push(`Most modernized: <b>${lowest.name}</b> at just <b>${lowest.sortVal}%</b> Offline.`);
-    }
+    if(highest) bullets.push(`Highest <b>${label}</b> share: <b>${highest.name}</b> at <b>${highest.sortVal}%</b>.`);
+    if(lowest && highest && lowest.name !== highest.name) bullets.push(`Lowest <b>${label}</b> share: <b>${lowest.name}</b> at just <b>${lowest.sortVal}%</b>.`);
 
-    renderInsightBlock(insightId, (byLabel['Offline'] ?? '—')+'%',
-      `of restaurants ${scope} still use offline / pen-paper billing`,
-      bullets, 'Manual/Offline share, cities ranked', rankedOffline);
+    renderInsightBlock(insightId, (cat ? cat.pct : (byLabel[label] ?? '—'))+'%',
+      `of restaurants ${scope} fall under <b>${label}</b>`,
+      bullets, `${label} share, cities ranked`, ranked);
+  }
+
+  function render(choice){
+    const cats = sumFor(choice);
+    container.innerHTML = cats.map(c => `
+      <div class="smx-tile smx-tile-clickable${c.key === activeKey ? ' smx-tile-active' : ''}" data-key="${c.key}" style="--accent:${c.color};">
+        <div class="smx-tile-head">
+          <span class="smx-tile-icon" style="background:${c.color};">${SMX_ICONS[c.key]}</span>
+          <span class="smx-tile-label">${c.label}</span>
+        </div>
+        <div class="smx-tile-num">${c.pct}%</div>
+        <div class="smx-tile-sub">${fmt(c.val)} restaurants</div>
+        <div class="smx-tile-track"><div class="smx-tile-fill" style="width:${c.pct}%;background:${c.color};"></div></div>
+        <div class="smx-tile-hint">Click for city-wise detail →</div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.smx-tile-clickable').forEach(tile => {
+      tile.addEventListener('click', () => {
+        activeKey = tile.dataset.key;
+        container.querySelectorAll('.smx-tile-clickable').forEach(t => t.classList.remove('smx-tile-active'));
+        tile.classList.add('smx-tile-active');
+        showCategoryInsight(choice, cats, activeKey);
+      });
+    });
+
+    showCategoryInsight(choice, cats, activeKey);
   }
 
   sel.onchange = () => render(sel.value);
