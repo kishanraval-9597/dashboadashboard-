@@ -118,6 +118,48 @@
     margin-bottom:6px;
     display:block;
   }
+
+  /* Quick access — replaces "At a glance" with direct buttons straight to
+     the two tables people check most often, instead of a sentence they
+     have to read and then still scroll down to Tab 3 for. Clicking a
+     button shows that table's Total view right here; its own city dropdown
+     still works exactly like the full copy further down in Tab 3. */
+  .quick-access-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 22px 22px;
+    margin-bottom:22px;
+    box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 2px 4px rgba(33,30,26,.07), 0 10px 24px rgba(33,30,26,.10);
+  }
+  .quick-access-tabs{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .qa-tab{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:700;
+    padding:10px 18px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--brand-tint);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .qa-tab:hover{ background:#E4ECF3; }
+  .qa-tab.active{
+    background:var(--brand);
+    border-color:var(--brand);
+    color:#fff;
+    box-shadow:0 2px 6px rgba(44,74,110,.25);
+  }
+  @media (max-width:560px){
+    .qa-tab{ flex:1 1 auto; text-align:center; }
+  }
   .section-icon{
     display:inline-flex;
     align-items:center;
@@ -991,7 +1033,34 @@
     </div>
   </header>
 
-  <div class="at-a-glance" id="atAGlance" style="display:none;"></div>
+  <div class="quick-access-card" id="quickAccessCard">
+    <div class="quick-access-tabs">
+      <button type="button" class="qa-tab active" data-panel="qaPanelSoftware">📊 Software Usage Matrix</button>
+      <button type="button" class="qa-tab" data-panel="qaPanelBilling">🧾 Billing System Usage</button>
+    </div>
+
+    <div class="quick-access-panel" id="qaPanelSoftware">
+      <div class="city-select-row">
+        <label for="qaSoftwareSelect">Show:</label>
+        <select id="qaSoftwareSelect"></select>
+      </div>
+      <div class="table-with-insight">
+        <div id="qaSoftwareGrid" class="software-matrix-grid"></div>
+        <div class="insight-panel" id="qaSoftwareInsight"></div>
+      </div>
+    </div>
+
+    <div class="quick-access-panel" id="qaPanelBilling" style="display:none;">
+      <div class="city-select-row">
+        <label for="qaBillingSelect">Show:</label>
+        <select id="qaBillingSelect"></select>
+      </div>
+      <div class="table-with-insight">
+        <div id="qaBillingList" class="billing-bar-list"></div>
+        <div class="insight-panel" id="qaBillingInsight"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="err-banner" id="errBanner"></div>
 
@@ -2178,6 +2247,12 @@ function renderSurveySummaryTab(grid){
   wireSoftwareUsageMatrix('summarySoftwareUsage', 'summarySoftwareUsageSelect', data.billingExisting);
 
   wireBillingDetailTable('summaryBillingExisting', 'summaryBillingExistingSelect', data.billingExisting);
+
+  // Same two components, a second time, for the quick-access panel up top —
+  // same underlying data and functions, just different container/select/
+  // insight element ids so the two copies don't collide.
+  wireSoftwareUsageMatrix('qaSoftwareGrid', 'qaSoftwareSelect', data.billingExisting, 'qaSoftwareInsight');
+  wireBillingDetailTable('qaBillingList', 'qaBillingSelect', data.billingExisting, 'qaBillingInsight');
 }
 
 // The sheet's own Software Usage Matrix (Cloud / Offline / Not Answered /
@@ -2224,7 +2299,8 @@ const SMX_ICONS = {
   other: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 004 0 2 2 0 004 0 2 2 0 004 0 2 2 0 004 0"/><path d="M5 9v10h14V9"/></svg>`,
 };
 
-function wireSoftwareUsageMatrix(containerId, selectId, billingRows){
+function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
+  insightId = insightId || 'summarySoftwareUsageInsight';
   const container = document.getElementById(containerId);
   const sel = document.getElementById(selectId);
   if(!container || !sel || !billingRows) return;
@@ -2277,7 +2353,7 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows){
       bullets.push(`Most modernized: <b>${lowest.name}</b> at just <b>${lowest.sortVal}%</b> Offline.`);
     }
 
-    renderInsightBlock('summarySoftwareUsageInsight', (byLabel['Offline'] ?? '—')+'%',
+    renderInsightBlock(insightId, (byLabel['Offline'] ?? '—')+'%',
       `of restaurants ${scope} still use offline / pen-paper billing`,
       bullets, 'Manual/Offline share, cities ranked', rankedOffline);
   }
@@ -2290,7 +2366,8 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows){
 // transposing these would trade 6 city-columns for 11+ software-columns,
 // which is worse, not better). A city dropdown lets you drill into any one
 // city instead of only seeing the Total.
-function wireBillingDetailTable(containerId, selectId, rows){
+function wireBillingDetailTable(containerId, selectId, rows, insightId){
+  insightId = insightId || 'summaryBillingExistingInsight';
   const list = document.getElementById(containerId);
   const sel = document.getElementById(selectId);
   if(!list || !sel || !rows) return;
@@ -2340,7 +2417,7 @@ function wireBillingDetailTable(containerId, selectId, rows){
     // the visible list above, but left out of the Top 5 named-software
     // ranking below so the ranking only ever names real software.
     const top = sorted.filter(r => r.label !== 'Declined to Share').slice(0, 5);
-    const insightEl = document.getElementById('summaryBillingExistingInsight');
+    const insightEl = document.getElementById(insightId);
     if(insightEl && top.length){
       const label = choice === '__TOTAL__' ? 'across all cities' : `in <b>${choice}</b>`;
       const topLabel = top[0].label, topVal = top[0].val;
@@ -3006,7 +3083,6 @@ async function loadAll(isManual){
     buildKpis(survey, rest);
     buildTicker(survey, rest);
     renderDataThrough(survey, rest);
-    renderAtAGlance(survey, rest);
     renderOutletMatrix(survey, rest);
     renderCompetitive(survey);
     renderSurveySection(survey);
@@ -3068,6 +3144,20 @@ function downloadExcel(){
 }
 
 document.getElementById('downloadBtn').addEventListener('click', downloadExcel);
+
+// Quick-access tabs — purely a show/hide toggle; both panels' data is
+// already wired up by wireSoftwareUsageMatrix / wireBillingDetailTable
+// regardless of which one is visible, so switching is instant.
+document.querySelectorAll('.qa-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.qa-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.quick-access-panel').forEach(p => { p.style.display = 'none'; });
+    btn.classList.add('active');
+    const panel = document.getElementById(btn.dataset.panel);
+    if(panel) panel.style.display = '';
+  });
+});
+
 loadAll(false);
 setInterval(() => loadAll(false), REFRESH_MS);
 </script>
