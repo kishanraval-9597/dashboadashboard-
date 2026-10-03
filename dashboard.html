@@ -681,6 +681,66 @@
   }
   .billing-bar-fill{ height:100%; border-radius:5px; }
 
+  /* Clicking a software row opens its own city-wise table right underneath
+     it, same toggle pattern as the Software Usage Matrix tiles: first click
+     opens, clicking the same row again closes it. */
+  .billing-bar-row-clickable{ cursor:pointer; padding:6px 8px; margin:0 -8px 7px; border-radius:8px; transition:background .15s ease; }
+  .billing-bar-row-clickable:hover{ background:var(--brand-tint); }
+  .billing-bar-row-active{ background:var(--brand-tint); }
+  .billing-bar-hint{
+    font-size:10px;
+    font-weight:600;
+    color:var(--ink-soft);
+    opacity:0;
+    margin-top:6px;
+    transition:opacity .15s ease;
+  }
+  .billing-bar-row-clickable:hover .billing-bar-hint,
+  .billing-bar-row-active .billing-bar-hint{ opacity:1; }
+  .billing-row-detail{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px 8px;
+    margin-top:10px;
+  }
+  .billing-row-detail-head{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .billing-row-detail-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 0;
+  }
+  .billing-row-detail-item .l{
+    width:90px;
+    flex-shrink:0;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .billing-row-detail-track{
+    flex:1;
+    height:6px;
+    border-radius:4px;
+    background:#EFEAE0;
+    overflow:hidden;
+  }
+  .billing-row-detail-fill{ height:100%; border-radius:4px; }
+  .billing-row-detail-item .n{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:12px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
   .insight-panel{
     flex:1;
     min-width:220px;
@@ -2520,6 +2580,32 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
   sel.innerHTML = '<option value="__TOTAL__">Total (all cities)</option>' +
     SUMMARY_CITIES.map(c => `<option value="${c}">${c}</option>`).join('');
 
+  // Which software's inline city-wise table is currently expanded. Starts
+  // closed — clicking a row opens its own breakdown; clicking that same
+  // row again closes it, exactly like the Software Usage Matrix tiles.
+  let expandedLabel = null;
+
+  function rowDetailHTML(rowObj){
+    const raw = rowObj.raw;
+    const ranks = SUMMARY_CITIES.map(city => ({
+      name: city,
+      val: raw.byCity[city] || 0,
+      pctText: raw.byCityPct[city] || '0%',
+    })).sort((a,b) => parsePctText(b.pctText) - parsePctText(a.pctText));
+    const maxVal = Math.max(...ranks.map(r => r.val), 1);
+    return `
+      <div class="billing-row-detail">
+        <div class="billing-row-detail-head">${rowObj.label} — city-wise breakdown</div>
+        ${ranks.map(r => `
+          <div class="billing-row-detail-item">
+            <span class="l">${r.name}</span>
+            <div class="billing-row-detail-track"><div class="billing-row-detail-fill" style="width:${(r.val/maxVal)*100}%;background:${rowObj.color};"></div></div>
+            <span class="n">${fmt(r.val)} <span class="pct-pill" style="background:${rowObj.color}22;color:${rowObj.color};">${r.pctText}</span></span>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
   function render(choice){
     let cloudTotal = 0, offlineTotal = 0, grandTotal = 0;
     const allRows = [];
@@ -2531,7 +2617,7 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
       const val = choice === '__TOTAL__' ? r.total : (r.byCity[choice] || 0);
       const pctText = choice === '__TOTAL__' ? r.totalPct : (r.byCityPct[choice] || '');
       const color = r.label === 'Others' ? '#5C7A89' : (r.tag === 'Cloud' ? '#B44736' : (r.tag === 'Offline' ? '#8F641D' : '#6B6FA8'));
-      allRows.push({ label:r.label, val, pctText, color, tag:r.tag });
+      allRows.push({ label:r.label, val, pctText, color, tag:r.tag, raw:r });
       if(r.tag === 'Cloud') cloudTotal += val;
       if(r.tag === 'Offline') offlineTotal += val;
     });
@@ -2547,16 +2633,27 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
     html += sorted.map(r => {
       const tagHtml = r.tag ? `<span class="billing-bar-tag" style="background:${r.color}22;color:${r.color};">${r.tag}</span>` : '';
       const fillWidth = maxVal ? (r.val / maxVal) * 100 : 0;
+      const isOpen = r.label === expandedLabel;
       return `
-        <div class="billing-bar-row">
+        <div class="billing-bar-row billing-bar-row-clickable${isOpen ? ' billing-bar-row-active' : ''}" data-label="${r.label}">
           <div class="billing-bar-row-top">
             <span class="billing-bar-label">${r.label}${tagHtml}</span>
             <span class="billing-bar-count">${fmt(r.val)} <span class="billing-bar-pct">(${r.pctText || '0%'})</span></span>
           </div>
           <div class="billing-bar-track"><div class="billing-bar-fill" style="width:${fillWidth}%;background:${r.color};"></div></div>
+          <div class="billing-bar-hint">${isOpen ? 'Click to close ✕' : 'Click for city-wise detail →'}</div>
+          ${isOpen ? rowDetailHTML(r) : ''}
         </div>`;
     }).join('');
     list.innerHTML = html;
+
+    list.querySelectorAll('.billing-bar-row-clickable').forEach(rowEl => {
+      rowEl.addEventListener('click', () => {
+        const label = rowEl.dataset.label;
+        expandedLabel = (expandedLabel === label) ? null : label;
+        render(choice);
+      });
+    });
 
     // "Declined to Share" is a non-answer, not a software choice — kept in
     // the visible list above, but left out of the Top 5 named-software
