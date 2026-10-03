@@ -560,6 +560,14 @@
     margin-top:12px;
   }
   .smx-tile-fill{ height:100%; border-radius:4px; }
+  .smx-tile-names{
+    font-size:10.5px;
+    line-height:1.5;
+    color:var(--ink-soft);
+    margin-top:10px;
+    padding-top:9px;
+    border-top:1px dashed var(--line);
+  }
   .smx-tile-clickable{ cursor:pointer; }
   .smx-tile-clickable:hover{ border-color:var(--accent); }
   .smx-tile-active{
@@ -2458,6 +2466,19 @@ function computeSoftwareUsageByCity(billingRows){
   const notAnsweredRow = billingRows.find(r => r.label === 'Declined to Share');
   const otherRow = billingRows.find(r => r.label === 'Others');
 
+  // Which named software actually makes up each category — same list
+  // regardless of city/Total selection, since a software's Cloud/Offline
+  // tag doesn't change with the dropdown. Shown on each tile so "Cloud" or
+  // "Offline" isn't just a label — it's traceable back to real names.
+  const namesByKey = { cloud: [], offline: [], notAnswered: [], other: [] };
+  billingRows.forEach(r => {
+    if(r.label === 'Total' || r.label === 'Declined to Share' || r.label === 'Others') return;
+    if(r.tag === 'Cloud') namesByKey.cloud.push(r.label);
+    else if(r.tag === 'Offline') namesByKey.offline.push(r.label);
+  });
+  if(notAnsweredRow) namesByKey.notAnswered.push('Declined to Share (no software named)');
+  if(otherRow) namesByKey.other.push('Unlisted / regional software not named individually');
+
   return function(choice){
     const val = (row) => row ? (choice === '__TOTAL__' ? row.total : (row.byCity[choice] || 0)) : 0;
     let cloud = 0, offline = 0;
@@ -2470,7 +2491,7 @@ function computeSoftwareUsageByCity(billingRows){
     const other = val(otherRow);
     const denom = val(totalRow) || (cloud + offline + notAnswered + other) || 1;
     const sums = { cloud, offline, notAnswered, other };
-    return CATS.map(c => ({ ...c, val: sums[c.key], pct: pct(sums[c.key], denom) }));
+    return CATS.map(c => ({ ...c, val: sums[c.key], pct: pct(sums[c.key], denom), names: namesByKey[c.key] }));
   };
 }
 
@@ -2591,6 +2612,7 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
         <div class="smx-tile-num">${c.pct}%</div>
         <div class="smx-tile-sub">${fmt(c.val)} restaurants</div>
         <div class="smx-tile-track"><div class="smx-tile-fill" style="width:${c.pct}%;background:${c.color};"></div></div>
+        <div class="smx-tile-names">${c.names.join(', ')}</div>
         <div class="smx-tile-hint">${c.key === expandedKey ? 'Click to close ✕' : 'Click for city-wise detail →'}</div>
       </div>
     `).join('');
