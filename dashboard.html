@@ -586,13 +586,31 @@
     padding:14px 16px 10px;
     margin-top:2px;
   }
+  .smx-city-detail-head-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
   .smx-city-detail-head{
     font-size:11.5px;
     font-weight:700;
     text-transform:uppercase;
     letter-spacing:.03em;
     color:var(--ink-soft);
-    margin-bottom:10px;
+  }
+  .smx-city-detail-total{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .smx-city-detail-total b{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    color:var(--ink);
+    font-size:13.5px;
   }
   .smx-city-detail-row{
     display:flex;
@@ -2534,9 +2552,13 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
     const label = cat ? cat.label : key;
     const color = cat ? cat.color : '#8F641D';
     const ranks = cityRanksFor(key);
+    const total = ranks.reduce((sum, r) => sum + r.val, 0);
     return `
       <div class="smx-city-detail">
-        <div class="smx-city-detail-head">${label} — city-wise breakdown</div>
+        <div class="smx-city-detail-head-row">
+          <span class="smx-city-detail-head">${label} — city-wise breakdown</span>
+          <span class="smx-city-detail-total">Total <b>${fmt(total)}</b></span>
+        </div>
         ${ranks.map(r => `
           <div class="smx-city-detail-row">
             <span class="l">${r.name}</span>
