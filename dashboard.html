@@ -555,6 +555,7 @@
     color:var(--ink);
     font-size:13.5px;
   }
+  .smx-city-hint{ font-size:11px; color:var(--ink-soft); margin:-4px 0 8px; font-weight:600; }
   .smx-city-detail-row{
     display:flex;
     align-items:center;
@@ -974,6 +975,52 @@
     .outlet-cards{grid-template-columns:repeat(2,1fr);}
   }
 
+  /* ---- Visit trend (DoD / MoM) ---- */
+  .trend-controls{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .trend-seg{ display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--brand-tint); }
+  .trend-seg-btn{ font-family:'Inter',sans-serif; font-size:13px; font-weight:700; padding:9px 16px; border:none; background:transparent; color:var(--ink-soft); cursor:pointer; }
+  .trend-seg-btn.active{ background:var(--brand); color:#fff; }
+  .trend-kpis{ display:grid; grid-template-columns:repeat(4, minmax(150px,1fr)); gap:12px; margin-bottom:16px; }
+  .trend-kpi{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--card); }
+  .trend-kpi .l{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); }
+  .trend-kpi .n{ font-family:'Fraunces',serif; font-weight:700; font-size:28px; line-height:1.1; margin-top:6px; color:var(--ink); }
+  .trend-kpi .n.up{ color:#1E6B67; } .trend-kpi .n.down{ color:#B44736; }
+  .trend-kpi .s{ font-size:11px; color:var(--ink-soft); margin-top:4px; font-family:'JetBrains Mono',monospace; }
+  .trend-legend{ display:flex; gap:18px; font-size:12px; color:var(--ink-soft); margin-bottom:8px; flex-wrap:wrap; }
+  .trend-chart-wrap{ overflow-x:auto; border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:14px; }
+  .trend-chart-wrap svg{ display:block; min-width:640px; width:100%; height:auto; }
+  .trend-chart-wrap .tb{ transition:opacity .12s ease; } .trend-chart-wrap .tb:hover{ opacity:.78; }
+  .trend-table-wrap{ max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:10px; }
+  .trend-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .trend-table th{ position:sticky; top:0; background:var(--brand-tint); text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:9px 12px; }
+  .trend-table th:first-child, .trend-table td:first-child{ text-align:left; }
+  .trend-table td{ text-align:right; padding:8px 12px; border-top:1px solid var(--line); font-family:'JetBrains Mono',monospace; }
+  .trend-table td:first-child{ font-family:'Inter',sans-serif; font-weight:600; }
+  .chg{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:11.5px; font-weight:700; }
+  .chg.up{ background:#1E6B6722; color:#1E6B67; } .chg.down{ background:#B4473622; color:#B44736; } .chg.flat{ background:#EFEAE0; color:var(--ink-soft); }
+  @media (max-width:760px){ .trend-kpis{ grid-template-columns:repeat(2,1fr); } }
+
+  /* ---- Restaurant drill-down (city -> software -> restaurants) ---- */
+  .smx-city-row-clickable, .billing-row-detail-item.clickable{ cursor:pointer; border-radius:6px; transition:background .12s ease; }
+  .smx-city-row-clickable:hover, .billing-row-detail-item.clickable:hover{ background:rgba(44,74,110,.08); }
+  .smx-city-row-clickable.active, .billing-row-detail-item.clickable.active{ background:rgba(44,74,110,.13); }
+  .drill-box{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:6px 0 10px; }
+  .drill-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .drill-title{ font-size:12px; font-weight:700; color:var(--ink); }
+  .drill-dl, .drill-more{ font-family:'Inter',sans-serif; font-size:12px; font-weight:700; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--brand-tint); color:var(--brand); cursor:pointer; }
+  .drill-dl:hover, .drill-more:hover{ background:#DCE6EF; }
+  .drill-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .drill-chip{ font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:20px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
+  .drill-chip b{ font-family:'JetBrains Mono',monospace; margin-left:4px; }
+  .drill-chip.active{ background:var(--brand); color:#fff; border-color:var(--brand); }
+  .drill-scroll{ max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+  .drill-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .drill-table th{ position:sticky; top:0; background:var(--brand-tint); text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 10px; white-space:nowrap; }
+  .drill-table td{ padding:7px 10px; border-top:1px solid var(--line); white-space:nowrap; }
+  .drill-table td.nm{ white-space:normal; min-width:160px; font-weight:600; }
+  .drill-yes{ color:#1E6B67; font-weight:700; } .drill-no{ color:#B44736; font-weight:700; }
+  .drill-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11.5px; color:var(--ink-soft); }
+
   /* Outlet Matrix city cards double as city pickers for the quick-access panels */
   .outlet-card-clickable{ cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
   .outlet-card-clickable:hover{ transform:translateY(-2px); }
@@ -1199,6 +1246,32 @@
     <!-- Unified overview card injected here -->
   </div>
   <div class="stat-note" style="margin:-14px 0 20px;">Available / Not Available percentages are relative to Completed surveys. Total Live Outlets in Market = New Restaurant Leads + Available Restaurants — the combined pool of confirmed, live-billing-relevant outlets across both sheets.</div>
+
+  <!-- VISIT TREND -->
+  <div class="section-head">
+    <span class="tag">TREND</span>
+    <h2><span class="section-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2C4A6E" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 3 3 5-6"/></svg></span>Visits — Day-wise &amp; Month-wise</h2>
+  </div>
+  <div class="card" id="trendCard" style="margin-bottom:16px;">
+    <div class="trend-controls">
+      <div class="trend-seg">
+        <button type="button" class="trend-seg-btn active" data-mode="daily">Daily · DoD</button>
+        <button type="button" class="trend-seg-btn" data-mode="monthly">Monthly · MoM</button>
+      </div>
+      <div class="city-select-row" style="margin:0;">
+        <label for="trendCity">Show:</label>
+        <select id="trendCity"></select>
+      </div>
+    </div>
+    <div class="trend-kpis" id="trendKpis"></div>
+    <div class="trend-legend">
+      <span><span class="metric-dot" style="background:#1E6B67;"></span>Restaurant available</span>
+      <span><span class="metric-dot" style="background:#B44736;"></span>Not available</span>
+    </div>
+    <div class="trend-chart-wrap" id="trendChart"></div>
+    <div class="trend-table-wrap" id="trendTable"></div>
+    <div class="stat-note">A visit = one survey row. DoD compares each day with the calendar day before it; MoM compares each month with the month before it. The current month is partial, so its MoM is compared with the same number of days last month.</div>
+  </div>
 
   <!-- OUTLET MATRIX -->
   <div class="section-head">
@@ -1836,6 +1909,10 @@ function softwareLabel(raw){
   return raw.replace(/\s+/g, ' ').trim();
 }
 
+// Row-level index behind the click-through drill-down: every available
+// restaurant with the software bucket it landed in (see buildBillingRowsFromSurvey).
+let SW_INDEX = { items: [] };
+
 function buildBillingRowsFromSurvey(survey){
   const avail = survey.filter(r => (r['Res Available']||'').toString().trim().toLowerCase() === 'yes');
 
@@ -1892,7 +1969,191 @@ function buildBillingRowsFromSurvey(survey){
   const totalByCity = {}, totalByCityPct = {};
   CITY_ORDER.forEach(c => { totalByCity[c] = cityTotals[c]; totalByCityPct[c] = '100%'; });
   rows.push({ label:'Total', total:grandTotal, totalPct:'100%', byCity:totalByCity, byCityPct:totalByCityPct, tag:'' });
+
+  SW_INDEX = { items: avail.map(r => {
+    const raw = (r['Ex Software'] || '').toString().trim();
+    let label, category;
+    if(classifySoftware(raw) === 'notAnswered'){ label = 'Declined to Share'; category = 'notAnswered'; }
+    else {
+      const l = softwareLabel(raw);
+      if(named.has(l)){ label = l; category = OFFLINE_LABELS.has(l) ? 'offline' : 'cloud'; }
+      else { label = 'Others'; category = 'other'; }
+    }
+    const d = parseDate(r['Date']);
+    return { r, city: normalizeCity(r['Region']), label, category, raw, t: d ? d.getTime() : 0 };
+  }) };
   return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Visit trend — how many visits (survey rows) land per day and per month,
+// with day-over-day (DoD) and month-over-month (MoM) change. Drawn as plain
+// SVG, so no chart library is needed.
+// ---------------------------------------------------------------------------
+let TREND_ROWS = [];                          // { t: local-midnight ms, city, avail }
+const TREND_STATE = { mode:'daily', city:'ALL' };
+
+function buildTrendIndex(survey){
+  const endToday = new Date(); endToday.setHours(23,59,59,999);
+  TREND_ROWS = [];
+  survey.forEach(r => {
+    const d = parseDate(r['Date']);
+    if(!d || d > endToday) return;           // undated rows and future-dated typos are left out
+    TREND_ROWS.push({
+      t: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
+      city: normalizeCity(r['Region']),
+      avail: (r['Res Available'] || '').toString().trim().toLowerCase() === 'yes'
+    });
+  });
+}
+
+function pctChange(cur, prev){ return prev > 0 ? (cur - prev) / prev * 100 : null; }
+function chgText(v){
+  if(v === null) return '—';
+  const r = Math.round(v * 10) / 10;
+  return (r > 0 ? '+' : '') + r + '%';
+}
+function chgPill(v){
+  if(v === null) return '<span class="chg flat">—</span>';
+  const r = Math.round(v * 10) / 10;
+  return `<span class="chg ${r > 0 ? 'up' : r < 0 ? 'down' : 'flat'}">${r > 0 ? '▲ ' : r < 0 ? '▼ ' : ''}${Math.abs(r)}%</span>`;
+}
+
+function trendChartSVG(items){
+  const W = 920, H = 270, ml = 46, mr = 10, mt = 14, mb = 46;
+  const iw = W - ml - mr, ih = H - mt - mb;
+  const maxV = Math.max(1, ...items.map(i => i.a + i.n));
+  const mag = Math.pow(10, Math.floor(Math.log10(maxV)));
+  const niceMax = [1, 2, 2.5, 5, 10].map(m => m * mag).find(v => v >= maxV);
+  const y = v => mt + ih - (v / niceMax) * ih;
+  const slot = iw / items.length, bw = Math.min(40, slot * 0.68);
+  let g = '';
+  for(let k = 0; k <= 4; k++){
+    const v = niceMax * k / 4;
+    g += `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${k ? 'stroke-dasharray="3 4"' : ''}/>` +
+         `<text x="${ml - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${fmt(Math.round(v))}</text>`;
+  }
+  const step = items.length > 24 ? 3 : items.length > 14 ? 2 : 1;
+  items.forEach((it, i) => {
+    const x = ml + slot * i + (slot - bw) / 2;
+    g += `<g class="tb"><title>${esc(it.tip)}</title>` +
+         `<rect x="${x}" y="${y(it.a)}" width="${bw}" height="${(it.a / niceMax) * ih}" fill="#1E6B67" rx="2"/>` +
+         `<rect x="${x}" y="${y(it.a + it.n)}" width="${bw}" height="${(it.n / niceMax) * ih}" fill="#B44736" rx="2"/>` +
+         `<rect x="${ml + slot * i}" y="${mt}" width="${slot}" height="${ih}" fill="transparent"/></g>`;
+    if(items.length <= 14 && it.a + it.n > 0){
+      g += `<text x="${x + bw / 2}" y="${y(it.a + it.n) - 5}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${fmt(it.a + it.n)}</text>`;
+    }
+    if((items.length - 1 - i) % step === 0){
+      g += `<text x="${x + bw / 2}" y="${H - mb + 16}" text-anchor="middle" font-size="11" fill="var(--ink-soft)">${esc(it.label)}</text>`;
+    }
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Visits chart">${g}</svg>`;
+}
+
+function drawTrend(){
+  const chartEl = document.getElementById('trendChart');
+  const kpiEl = document.getElementById('trendKpis');
+  const tableEl = document.getElementById('trendTable');
+  if(!chartEl || !kpiEl || !tableEl) return;
+  if(!TREND_ROWS.length){
+    kpiEl.innerHTML = ''; tableEl.innerHTML = '';
+    chartEl.innerHTML = '<div class="stat-note" style="padding:14px;">No dated survey rows to chart yet.</div>';
+    return;
+  }
+
+  // "Latest day" = newest date in the data (not "today"), so a lagging sheet still reads correctly.
+  const latestT = TREND_ROWS.reduce((m, r) => r.t > m ? r.t : m, 0);
+  const minT = TREND_ROWS.reduce((m, r) => r.t < m ? r.t : m, latestT);
+  const latest = new Date(latestT);
+  const now = new Date();
+  const isToday = latestT === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const rows = TREND_STATE.city === 'ALL' ? TREND_ROWS : TREND_ROWS.filter(r => r.city === TREND_STATE.city);
+  const day = new Map();
+  rows.forEach(r => {
+    let o = day.get(r.t);
+    if(!o){ o = { a:0, n:0 }; day.set(r.t, o); }
+    if(r.avail) o.a++; else o.n++;
+  });
+  const addDays = (d, k) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
+  const dayAt = d => day.get(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) || { a:0, n:0 };
+  const tot = o => o.a + o.n;
+  const rangeSum = (from, to) => {
+    let a = 0, n = 0;
+    for(let d = from; d <= to; d = addDays(d, 1)){ const o = dayAt(d); a += o.a; n += o.n; }
+    return { a, n };
+  };
+  const fDay = d => d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+  const fMon = d => d.toLocaleDateString('en-IN', { month:'short', year:'numeric' });
+
+  // ---- headline tiles (always shown, whichever view is selected)
+  const cur = dayAt(latest), prv = dayAt(addDays(latest, -1));
+  const dod = pctChange(tot(cur), tot(prv));
+  const mStart = new Date(latest.getFullYear(), latest.getMonth(), 1);
+  const pmStart = new Date(latest.getFullYear(), latest.getMonth() - 1, 1);
+  const pmDays = new Date(latest.getFullYear(), latest.getMonth(), 0).getDate();
+  const span = Math.min(latest.getDate(), pmDays);
+  const mtd = rangeSum(mStart, latest);
+  const pmSame = rangeSum(pmStart, addDays(pmStart, span - 1));
+  const mom = pctChange(tot(mtd), tot(pmSame));
+  const cls = v => v === null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '';
+  kpiEl.innerHTML = `
+    <div class="trend-kpi"><div class="l">Latest day · ${esc(fDay(latest))}</div><div class="n">${fmt(tot(cur))}</div>
+      <div class="s">${fmt(cur.a)} available · ${fmt(cur.n)} not${isToday ? ' · day in progress' : ''}</div></div>
+    <div class="trend-kpi"><div class="l">Day-over-day</div><div class="n ${cls(dod)}">${chgText(dod)}</div>
+      <div class="s">${fmt(tot(cur))} vs ${fmt(tot(prv))} on ${esc(fDay(addDays(latest, -1)))}</div></div>
+    <div class="trend-kpi"><div class="l">Month to date · ${esc(fMon(latest))}</div><div class="n">${fmt(tot(mtd))}</div>
+      <div class="s">1–${latest.getDate()} ${esc(latest.toLocaleDateString('en-IN', { month:'short' }))}</div></div>
+    <div class="trend-kpi"><div class="l">Month-over-month</div><div class="n ${cls(mom)}">${chgText(mom)}</div>
+      <div class="s">${fmt(tot(mtd))} vs ${fmt(tot(pmSame))} (1–${span} ${esc(pmStart.toLocaleDateString('en-IN', { month:'short' }))})</div></div>`;
+
+  if(TREND_STATE.mode === 'daily'){
+    // last 30 calendar days ending at the latest data day
+    const items = [], tbl = [];
+    for(let i = 29; i >= 0; i--){
+      const d = addDays(latest, -i), o = dayAt(d), p = dayAt(addDays(d, -1));
+      const ch = pctChange(tot(o), tot(p));
+      items.push({ a:o.a, n:o.n, label:d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }),
+        tip:`${fDay(d)}: ${tot(o)} visits (${o.a} available · ${o.n} not available) · DoD ${chgText(ch)}` });
+      tbl.push({ d, o, ch });
+    }
+    chartEl.innerHTML = trendChartSVG(items);
+    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Date</th><th>Visits</th><th>Available</th><th>Not available</th><th>vs previous day</th></tr></thead><tbody>` +
+      tbl.reverse().map(r => `<tr><td>${esc(fDay(r.d))}</td><td><b>${fmt(tot(r.o))}</b></td><td>${fmt(r.o.a)}</td><td>${fmt(r.o.n)}</td><td>${chgPill(r.ch)}</td></tr>`).join('') +
+      `</tbody></table>`;
+  } else {
+    const idx = d => d.getFullYear() * 12 + d.getMonth();
+    const curIdx = idx(latest), startIdx = Math.max(idx(new Date(minT)), curIdx - 11);
+    const items = [], tbl = [];
+    for(let k = startIdx; k <= curIdx; k++){
+      const ms = new Date(Math.floor(k / 12), k % 12, 1);
+      const me = new Date(Math.floor(k / 12), k % 12 + 1, 0);
+      const partial = k === curIdx && latest.getDate() < me.getDate();
+      const to = partial ? latest : me;
+      const o = rangeSum(ms, to);
+      const ps = new Date(ms.getFullYear(), ms.getMonth() - 1, 1);
+      const pe = new Date(ms.getFullYear(), ms.getMonth(), 0);
+      const pTo = partial ? (addDays(ps, latest.getDate() - 1) < pe ? addDays(ps, latest.getDate() - 1) : pe) : pe;
+      const ch = pctChange(tot(o), tot(rangeSum(ps, pTo)));
+      const label = ms.toLocaleDateString('en-IN', { month:'short', year:'2-digit' }) + (partial ? '*' : '');
+      items.push({ a:o.a, n:o.n, label, tip:`${fMon(ms)}${partial ? ` (1–${latest.getDate()}, month in progress)` : ''}: ${tot(o)} visits (${o.a} available · ${o.n} not available) · MoM ${chgText(ch)}` });
+      tbl.push({ ms, o, ch, partial });
+    }
+    chartEl.innerHTML = trendChartSVG(items);
+    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Month</th><th>Visits</th><th>Available</th><th>Not available</th><th>vs previous month</th></tr></thead><tbody>` +
+      tbl.reverse().map(r => `<tr><td>${esc(fMon(r.ms))}${r.partial ? ` <span style="font-weight:400;color:var(--ink-soft);">(1–${latest.getDate()}, so far)</span>` : ''}</td><td><b>${fmt(tot(r.o))}</b></td><td>${fmt(r.o.a)}</td><td>${fmt(r.o.n)}</td><td>${chgPill(r.ch)}</td></tr>`).join('') +
+      `</tbody></table>`;
+  }
+}
+
+function renderTrend(survey){
+  buildTrendIndex(survey);
+  const sel = document.getElementById('trendCity');
+  if(sel){
+    sel.innerHTML = '<option value="ALL">All cities</option>' + CITY_ORDER.map(c => `<option value="${c}">${c}</option>`).join('');
+    sel.value = TREND_STATE.city;
+  }
+  drawTrend();
 }
 
 // Remembers each panel's selected city and open tile/row across the 5-minute
@@ -1929,6 +2190,91 @@ function revealQuickAccess(){
   }
   const card = document.getElementById('quickAccessCard');
   if(card) card.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// Sheet text (restaurant / software names) goes into innerHTML — escape it so
+// a stray "<" or quote in the sheet can never break or hijack the page.
+function esc(v){
+  return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Software name shown on a chip: named software by its clean name; for the
+// "Others" / "Declined" buckets, the actual text the surveyor recorded.
+function chipKey(it){
+  if(it.label === 'Others' || it.label === 'Declined to Share') return it.raw || '(blank)';
+  return it.label;
+}
+const DRILL_PAGE = 50;
+function fmtDrillDate(it){
+  if(!it.t) return esc(it.r['Date'] || '—');
+  return new Date(it.t).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+
+// Builds the opened restaurant list: chips (software counts) + table.
+// ctx = { items, title, showChips }; st holds drillSw (chip filter) and shown (rows on screen).
+function drillHTML(ctx, st){
+  const all = ctx.items;
+  let chips = '';
+  if(ctx.showChips){
+    const counts = {};
+    all.forEach(it => { const k = chipKey(it); counts[k] = (counts[k] || 0) + 1; });
+    const ordered = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    const shownChips = ordered.slice(0, 12);
+    chips = `<div class="drill-chips">` +
+      `<button type="button" class="drill-chip${st.drillSw ? '' : ' active'}" data-sw="">All <b>${fmt(all.length)}</b></button>` +
+      shownChips.map(([k,c]) => `<button type="button" class="drill-chip${st.drillSw === k ? ' active' : ''}" data-sw="${esc(k)}">${esc(k)} <b>${fmt(c)}</b></button>`).join('') +
+      (ordered.length > 12 ? `<span style="font-size:11px;color:var(--ink-soft);align-self:center;">+${ordered.length - 12} more names — all are in the table</span>` : '') +
+      `</div>`;
+  }
+  const filtered = st.drillSw ? all.filter(it => chipKey(it) === st.drillSw) : all;
+  const sorted = filtered.slice().sort((a,b) => b.t - a.t);
+  const shown = sorted.slice(0, st.shown || DRILL_PAGE);
+  const yn = v => { const x = (v||'').toString().trim().toLowerCase(); return x === 'yes' ? '<span class="drill-yes">Yes</span>' : x === 'no' ? '<span class="drill-no">No</span>' : '—'; };
+  const rowsHtml = shown.map(it => `<tr>
+      <td class="nm">${esc(it.r['Res Name'] || '(no name recorded)')}</td>
+      <td>${esc(it.raw || '—')}</td>
+      <td>${yn(it.r['Zomato Live'])}</td>
+      <td>${yn(it.r['Swiggy Live'])}</td>
+      <td>${fmtDrillDate(it)}</td></tr>`).join('');
+  return `<div class="drill-box">
+    <div class="drill-head"><span class="drill-title">${esc(ctx.title)} — ${fmt(filtered.length)} restaurant${filtered.length === 1 ? '' : 's'}${st.drillSw ? ` · ${esc(st.drillSw)}` : ''}</span>
+      <button type="button" class="drill-dl">⬇ Download this list</button></div>
+    ${chips}
+    ${filtered.length ? `<div class="drill-scroll"><table class="drill-table"><thead><tr><th>Restaurant</th><th>Software</th><th>Zomato</th><th>Swiggy</th><th>Surveyed</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+    <div class="drill-foot"><span>Showing ${fmt(shown.length)} of ${fmt(filtered.length)}, latest survey first</span>${shown.length < filtered.length ? `<button type="button" class="drill-more">Show ${Math.min(DRILL_PAGE, filtered.length - shown.length)} more</button>` : ''}</div>` : '<div class="stat-note">No restaurants in this selection.</div>'}
+  </div>`;
+}
+
+// Hooks up chips / "show more" / download inside an already-rendered drill box.
+// getCtx() returns the CURRENT { items, title, showChips } so downloads match what's selected.
+function wireDrillEvents(root, st, rerender, getCtx){
+  root.querySelectorAll('.drill-chip').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const sw = b.dataset.sw || null;
+    st.drillSw = (st.drillSw === sw) ? null : sw;
+    st.shown = DRILL_PAGE;
+    rerender();
+  }));
+  root.querySelectorAll('.drill-more').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    st.shown = (st.shown || DRILL_PAGE) + DRILL_PAGE;
+    rerender();
+  }));
+  root.querySelectorAll('.drill-dl').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const ctx = getCtx();
+    const list = st.drillSw ? ctx.items.filter(it => chipKey(it) === st.drillSw) : ctx.items;
+    const data = list.slice().sort((a,b) => b.t - a.t).map(it => ({
+      'Restaurant': it.r['Res Name'] || '', 'City': it.city, 'Software': it.raw,
+      'Available': it.r['Res Available'] || '', 'Zomato Live': it.r['Zomato Live'] || '',
+      'Swiggy Live': it.r['Swiggy Live'] || '', 'Surveyed': it.t ? new Date(it.t).toISOString().slice(0,10) : (it.r['Date'] || '')
+    }));
+    if(!data.length){ alert('Nothing to download for this selection.'); return; }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Restaurants');
+    const safe = (ctx.title + (st.drillSw ? ' ' + st.drillSw : '')).replace(/[^\w]+/g,'_').slice(0,60);
+    XLSX.writeFile(wb, `Restaurants_${safe}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }));
 }
 
 function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
@@ -1976,6 +2322,11 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
       bullets, `${label} share, cities ranked`, ranked);
   }
 
+  // Restaurants behind one tile + one city (e.g. Cloud · Kolkata).
+  function drillCtx(key, city, label){
+    return { items: SW_INDEX.items.filter(it => it.city === city && it.category === key), title: `${label} · ${city}`, showChips: true };
+  }
+
   // The actual city-wise table a tile click opens, inline, right under the
   // tiles — not just a side-panel text update. Clicking the SAME tile again
   // sets this back to null, collapsing it.
@@ -1991,12 +2342,14 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
           <span class="smx-city-detail-head">${label} — city-wise breakdown</span>
           <span class="smx-city-detail-total">Total <b>${fmt(total)}</b></span>
         </div>
+        <div class="smx-city-hint">Click a city to open its restaurants ↓</div>
         ${ranks.map(r => `
-          <div class="smx-city-detail-row">
+          <div class="smx-city-detail-row smx-city-row-clickable${st.drillCity === r.name ? ' active' : ''}" data-city="${r.name}">
             <span class="l">${r.name}</span>
             <div class="smx-city-detail-track"><div class="smx-city-detail-fill" style="width:${r.pct}%;background:${color};"></div></div>
             <span class="n">${fmt(r.val)} <span class="pct-pill" style="background:${color}22;color:${color};">${r.pct}%</span></span>
           </div>
+          ${st.drillCity === r.name ? drillHTML(drillCtx(key, r.name, label), st) : ''}
         `).join('')}
       </div>`;
   }
@@ -2004,6 +2357,7 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
   // Which category's inline city table is currently expanded — null means
   // every tile is collapsed (the starting state: nothing opens until clicked).
   const st = UI_STATE[containerId] || (UI_STATE[containerId] = { choice:'__TOTAL__', expanded:null });
+  if(st.drillCity === undefined){ st.drillCity = null; st.drillSw = null; st.shown = DRILL_PAGE; }
 
   function render(choice){
     st.choice = choice;
@@ -2024,7 +2378,7 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
         <div class="smx-tile-num">${c.pct}%</div>
         <div class="smx-tile-sub">${fmt(c.val)} restaurants</div>
         <div class="smx-tile-track"><div class="smx-tile-fill" style="width:${c.pct}%;background:${c.color};"></div></div>
-        <div class="smx-tile-names">${c.names.join(', ')}</div>
+        <div class="smx-tile-names">${c.names.map(esc).join(', ')}</div>
         <div class="smx-tile-hint">${c.key === st.expanded ? 'Click to close ✕' : 'Click for city-wise detail →'}</div>
       </div>
     `).join('');
@@ -2039,8 +2393,23 @@ function wireSoftwareUsageMatrix(containerId, selectId, billingRows, insightId){
       tile.addEventListener('click', () => {
         const key = tile.dataset.key;
         st.expanded = (st.expanded === key) ? null : key;
+        st.drillCity = null; st.drillSw = null; st.shown = DRILL_PAGE;
         render(choice);
       });
+    });
+
+    // City rows inside the opened tile -> open that city's restaurants.
+    container.querySelectorAll('.smx-city-row-clickable').forEach(row => {
+      row.addEventListener('click', () => {
+        const city = row.dataset.city;
+        st.drillCity = (st.drillCity === city) ? null : city;
+        st.drillSw = null; st.shown = DRILL_PAGE;
+        render(choice);
+      });
+    });
+    wireDrillEvents(container, st, () => render(choice), () => {
+      const cat = cats.find(c => c.key === st.expanded);
+      return drillCtx(st.expanded, st.drillCity, cat ? cat.label : st.expanded);
     });
 
     showCategoryInsight(choice, cats, st.expanded || 'offline');
@@ -2070,6 +2439,12 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
   // closed — clicking a row opens its own breakdown; clicking that same
   // row again closes it, exactly like the Software Usage Matrix tiles.
   const st = UI_STATE[containerId] || (UI_STATE[containerId] = { choice:'__TOTAL__', expanded:null });
+  if(st.drillCity === undefined){ st.drillCity = null; st.drillSw = null; st.shown = DRILL_PAGE; }
+
+  // Restaurants behind one software row + one city (e.g. Petpooja · Kolkata).
+  function drillCtxB(label, city){
+    return { items: SW_INDEX.items.filter(it => it.city === city && it.label === label), title: `${label} · ${city}`, showChips: (label === 'Others' || label === 'Declined to Share') };
+  }
 
   function rowDetailHTML(rowObj){
     const raw = rowObj.raw;
@@ -2081,13 +2456,14 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
     const maxVal = Math.max(...ranks.map(r => r.val), 1);
     return `
       <div class="billing-row-detail">
-        <div class="billing-row-detail-head">${rowObj.label} — city-wise breakdown</div>
+        <div class="billing-row-detail-head">${esc(rowObj.label)} — city-wise breakdown <span class="smx-city-hint" style="display:inline;margin-left:8px;">Click a city to open its restaurants ↓</span></div>
         ${ranks.map(r => `
-          <div class="billing-row-detail-item">
+          <div class="billing-row-detail-item clickable${st.drillCity === r.name ? ' active' : ''}" data-city="${r.name}">
             <span class="l">${r.name}</span>
             <div class="billing-row-detail-track"><div class="billing-row-detail-fill" style="width:${(r.val/maxVal)*100}%;background:${rowObj.color};"></div></div>
             <span class="n">${fmt(r.val)} <span class="pct-pill" style="background:${rowObj.color}22;color:${rowObj.color};">${r.pctText}</span></span>
           </div>
+          ${st.drillCity === r.name ? drillHTML(drillCtxB(rowObj.label, r.name), st) : ''}
         `).join('')}
       </div>`;
   }
@@ -2122,9 +2498,9 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
       const fillWidth = maxVal ? (r.val / maxVal) * 100 : 0;
       const isOpen = r.label === st.expanded;
       return `
-        <div class="billing-bar-row billing-bar-row-clickable${isOpen ? ' billing-bar-row-active' : ''}" data-label="${r.label}">
+        <div class="billing-bar-row billing-bar-row-clickable${isOpen ? ' billing-bar-row-active' : ''}" data-label="${esc(r.label)}">
           <div class="billing-bar-row-top">
-            <span class="billing-bar-label">${r.label}${tagHtml}</span>
+            <span class="billing-bar-label">${esc(r.label)}${tagHtml}</span>
             <span class="billing-bar-count">${fmt(r.val)} <span class="billing-bar-pct">(${r.pctText || '0%'})</span></span>
           </div>
           <div class="billing-bar-track"><div class="billing-bar-fill" style="width:${fillWidth}%;background:${r.color};"></div></div>
@@ -2135,12 +2511,26 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
     list.innerHTML = html;
 
     list.querySelectorAll('.billing-bar-row-clickable').forEach(rowEl => {
-      rowEl.addEventListener('click', () => {
+      rowEl.addEventListener('click', (e) => {
+        if(e.target.closest('.billing-row-detail')) return; // clicks inside the opened detail are handled below
         const label = rowEl.dataset.label;
         st.expanded = (st.expanded === label) ? null : label;
+        st.drillCity = null; st.drillSw = null; st.shown = DRILL_PAGE;
         render(choice);
       });
     });
+
+    // City lines inside the opened software row -> open that city's restaurants.
+    list.querySelectorAll('.billing-row-detail-item.clickable').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const city = item.dataset.city;
+        st.drillCity = (st.drillCity === city) ? null : city;
+        st.drillSw = null; st.shown = DRILL_PAGE;
+        render(choice);
+      });
+    });
+    wireDrillEvents(list, st, () => render(choice), () => drillCtxB(st.expanded, st.drillCity));
 
     // "Declined to Share" is a non-answer, not a software choice — kept in
     // the visible list above, but left out of the Top 5 named-software
@@ -2156,13 +2546,13 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
         ? `Offline still leads Cloud by <b>${pct(offlineTotal - cloudTotal, grandTotal||1)} points</b> ${label}.`
         : `Cloud has overtaken Offline by <b>${pct(cloudTotal - offlineTotal, grandTotal||1)} points</b> ${label} — a shift worth flagging.`;
       const gapBullet = runnerUp
-        ? `<b>${topLabel}</b> leads <b>${runnerUp.label}</b> by <b>${fmt(gap)}</b> restaurants (${pct(gap, grandTotal||1)}% of the total).`
+        ? `<b>${esc(topLabel)}</b> leads <b>${esc(runnerUp.label)}</b> by <b>${fmt(gap)}</b> restaurants (${pct(gap, grandTotal||1)}% of the total).`
         : '';
       insightEl.innerHTML = `
         <div class="insight-title">📊 What this means</div>
         <div class="insight-stat">
           <span class="insight-stat-num">${pct(topVal, grandTotal||1)}%</span>
-          <span class="insight-stat-label">of restaurants use <b>${topLabel}</b> — the most common named software ${label}</span>
+          <span class="insight-stat-label">of restaurants use <b>${esc(topLabel)}</b> — the most common named software ${label}</span>
         </div>
         <ul class="insight-list">
           <li>Cloud software: <b>${pct(cloudTotal, grandTotal||1)}%</b>.</li>
@@ -2173,7 +2563,7 @@ function wireBillingDetailTable(containerId, selectId, rows, insightId){
         <div class="insight-divider"></div>
         <div class="insight-title">Top 5 named software ${choice === '__TOTAL__' ? '' : `— ${choice}`}</div>
         <ul class="insight-ranked">
-          ${top.map((s,i) => `<li><span class="insight-rank">${i+1}</span><span class="insight-rank-name">${s.label}</span><span class="insight-rank-val" style="color:${s.color};">${fmt(s.val)} <span style="color:var(--ink-soft);font-weight:400;">(${pct(s.val, grandTotal||1)}%)</span></span></li>`).join('')}
+          ${top.map((s,i) => `<li><span class="insight-rank">${i+1}</span><span class="insight-rank-name">${esc(s.label)}</span><span class="insight-rank-val" style="color:${s.color};">${fmt(s.val)} <span style="color:var(--ink-soft);font-weight:400;">(${pct(s.val, grandTotal||1)}%)</span></span></li>`).join('')}
         </ul>
         <div class="insight-footnote">Figures update automatically as you change the city above.</div>
       `;
@@ -2354,7 +2744,7 @@ function buildTicker(survey, rest){
   function pill(software, count, share){
     const isPetpooja = software.trim().toLowerCase() === 'petpooja';
     const color = isPetpooja ? '#1E6B67' : '#B44736';
-    return `<strong style="color:${color};">${software}</strong>: ${fmt(count)} (${share}%)`;
+    return `<strong style="color:${color};">${esc(software)}</strong>: ${fmt(count)} (${share}%)`;
   }
 
   const items = [];
@@ -2529,6 +2919,7 @@ async function loadAll(isManual){
     renderRestaurantSection(rest);
 
     renderQuickAccess(survey);
+    renderTrend(survey);
 
     dot.className = 'dot';
     if(brandMark) brandMark.classList.remove('refreshing');
@@ -2565,6 +2956,19 @@ function downloadExcel(){
 }
 
 document.getElementById('downloadBtn').addEventListener('click', downloadExcel);
+
+// Visit-trend controls: Daily / Monthly switch and the city picker.
+document.querySelectorAll('.trend-seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    TREND_STATE.mode = btn.dataset.mode;
+    document.querySelectorAll('.trend-seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    drawTrend();
+  });
+});
+document.getElementById('trendCity').addEventListener('change', e => {
+  TREND_STATE.city = e.target.value;
+  drawTrend();
+});
 
 // Quick-access tabs — both panels' data is already wired up by
 // wireSoftwareUsageMatrix / wireBillingDetailTable regardless of which is
