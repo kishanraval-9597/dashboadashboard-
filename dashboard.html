@@ -986,6 +986,31 @@
   .trend-kpi .n{ font-family:'Fraunces',serif; font-weight:700; font-size:28px; line-height:1.1; margin-top:6px; color:var(--ink); }
   .trend-kpi .n.up{ color:#1E6B67; } .trend-kpi .n.down{ color:#B44736; }
   .trend-kpi .s{ font-size:11px; color:var(--ink-soft); margin-top:4px; font-family:'JetBrains Mono',monospace; }
+  .trend-alert{ background:#FBF1DC; border:1px solid #E3C98C; color:#5C4310; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.5; }
+  .trend-alert b{ color:#3F2D05; }
+  .date-check{ margin:12px 0 4px; border:1px solid var(--line); border-radius:10px; background:var(--card); }
+  .date-check > summary{ cursor:pointer; padding:11px 14px; font-size:13px; font-weight:700; color:var(--brand); list-style:none; }
+  .date-check > summary::-webkit-details-marker{ display:none; }
+  .date-check > summary::before{ content:'▸'; display:inline-block; margin-right:8px; transition:transform .15s; }
+  .date-check[open] > summary::before{ transform:rotate(90deg); }
+  .date-check > summary span{ font-weight:400; color:var(--ink-soft); }
+  #dateCheckBody{ padding:2px 14px 14px; font-size:12.5px; }
+  .dc-facts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:6px 0 12px; }
+  .dc-fact{ border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+  .dc-fact .l{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:700; }
+  .dc-fact .n{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; margin-top:2px; }
+  .dc-fact.bad .n{ color:#B44736; }
+  .dc-h{ font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; color:var(--ink-soft); margin:14px 0 6px; }
+  .dc-scroll{ max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+  .dc-table{ width:100%; border-collapse:collapse; }
+  .dc-table th{ position:sticky; top:0; background:var(--brand-tint); text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:7px 10px; }
+  .dc-table th:first-child, .dc-table td:first-child{ text-align:left; }
+  .dc-table td{ text-align:right; padding:6px 10px; border-top:1px solid var(--line); font-family:'JetBrains Mono',monospace; }
+  .dc-table td:first-child{ font-family:'Inter',sans-serif; font-weight:600; }
+  .dc-table tr.nodate td{ color:#B44736; font-weight:700; }
+  .dc-cols{ display:flex; flex-wrap:wrap; gap:6px; }
+  .dc-cols .dc-code{ white-space:nowrap; }
+  .dc-code{ font-family:'JetBrains Mono',monospace; background:var(--brand-tint); border-radius:4px; padding:1px 6px; word-break:break-all; }
   .trend-line-key{ display:inline-block; width:18px; height:3px; background:#2C4A6E; border-radius:2px; margin-right:6px; vertical-align:middle; }
   .trend-warn{ color:#8F641D; font-weight:600; }
   .trend-legend{ display:flex; gap:18px; font-size:12px; color:var(--ink-soft); margin-bottom:8px; flex-wrap:wrap; }
@@ -1362,11 +1387,16 @@
         <select id="trendCity"><option value="ALL">All cities</option></select>
       </div>
     </div>
+    <div class="trend-alert" id="trendAlert" style="display:none;"></div>
     <div class="trend-kpis" id="trendKpis"></div>
     <div class="trend-legend" id="trendLegend"></div>
     <div class="trend-chart-wrap" id="trendChart"></div>
     <div class="trend-table-wrap" id="trendTable"></div>
     <div class="stat-note" id="trendQuality"></div>
+    <details class="date-check" id="dateCheck">
+      <summary>Check the date data <span>— how every row's date was read</span></summary>
+      <div id="dateCheckBody"></div>
+    </details>
     <div class="stat-note">Counts Available restaurants only. DoD compares a day with the calendar day before it; MoM compares a month with the month before it. Today's count is still growing, so it is shown separately and left out of DoD, MoM and month totals until the day is complete.</div>
   </div>
 
@@ -1573,24 +1603,37 @@ function detectDateOrder(rows){
   DATE_ORDER = (mdy && !dmy) ? 'MDY' : 'DMY';
 }
 
-// Reads: 2026-10-03 [14:20[:11]] · 03/10/2026 · 03-10-2026 · 3 Oct 2026 · 03-Oct-2026 ·
-// Oct 3, 2026 — each optionally followed by a time (24h or "2:20 PM").
+// Reads: 2026-10-03 [14:20[:11]] · 03/10/2026 · 03-10-26 · 03.10.2026 · 3 Oct 2026 ·
+// 03-Oct-2026 · Oct 3, 2026 · "Sat, 3 Oct 2026 at 2:20 PM" · spreadsheet serial numbers
+// (e.g. 46298.6) — each optionally followed by a time (24h or "2:20 PM").
 // Returns null for anything unreadable or impossible (31 Feb, month 13) rather than
 // letting JavaScript silently roll it into another month.
 function parseDate(s){
   if(s === null || s === undefined || s === '') return null;
   if(s instanceof Date) return isNaN(s.getTime()) ? null : s;
-  const str = String(s).trim();
+  // spreadsheet serial number (days since 30 Dec 1899) — what Excel/Sheets store under a date format
+  if(typeof s === 'number' || /^\d{5}(\.\d+)?$/.test(String(s).trim())){
+    const v = Number(s);
+    if(v >= 20000 && v <= 80000){
+      const days = Math.floor(v), secs = Math.round((v - days) * 86400);
+      return new Date(1899, 11, 30 + days, Math.floor(secs / 3600), Math.floor(secs % 3600 / 60));
+    }
+    return null;
+  }
+  let str = String(s).trim()
+    .replace(/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+/i, '')     // "Sat, 3 Oct 2026"
+    .replace(/\s+at\s+/i, ' ');                                        // "3 Oct 2026 at 2:20 PM"
+  const fixYear = yy => yy < 100 ? 2000 + yy : yy;                     // 26 -> 2026
   let y, m, d, rest, mt;
   if((mt = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[T\s]+(.*))?$/))){
     y = +mt[1]; m = +mt[2]; d = +mt[3]; rest = mt[4];
-  } else if((mt = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})(?:[T\s,]+(.*))?$/))){
-    const a = +mt[1], b = +mt[2]; y = +mt[3]; rest = mt[4];
+  } else if((mt = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4}|\d{2})(?!\d)(?:[T\s,]+(.*))?$/))){
+    const a = +mt[1], b = +mt[2]; y = fixYear(+mt[3]); rest = mt[4];
     if(a > 12){ d = a; m = b; } else if(b > 12){ m = a; d = b; }
     else if(DATE_ORDER === 'MDY'){ m = a; d = b; } else { d = a; m = b; }
-  } else if((mt = str.match(/^(\d{1,2})[-\s\/]([A-Za-z]{3,9})\.?,?[-\s\/]+(\d{4})(?:[T\s,]+(.*))?$/))){
+  } else if((mt = str.match(/^(\d{1,2})[-\s\/]([A-Za-z]{3,9})\.?,?[-\s\/]+(\d{4}|\d{2})(?!\d)(?:[T\s,]+(.*))?$/))){
     const mo = MONTH_NUM[mt[2].toLowerCase()]; if(mo === undefined) return null;
-    d = +mt[1]; m = mo + 1; y = +mt[3]; rest = mt[4];
+    d = +mt[1]; m = mo + 1; y = fixYear(+mt[3]); rest = mt[4];
   } else if((mt = str.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})(?:[T\s,]+(.*))?$/))){
     const mo = MONTH_NUM[mt[1].toLowerCase()]; if(mo === undefined) return null;
     m = mo + 1; d = +mt[2]; y = +mt[3]; rest = mt[4];
@@ -2133,20 +2176,75 @@ function buildBillingRowsFromSurvey(survey){
 // ---------------------------------------------------------------------------
 let TREND_ROWS = [];                          // Available restaurants only: { t: local-midnight ms, city }
 let TREND_QUALITY = { availTotal:0, undated:0, future:0 };
+let DATE_DIAG = null;                         // how every survey row's date was read — shown in "Check the date data"
 const TREND_STATE = { mode:'daily', city:'ALL' };
 
 function buildTrendIndex(survey){
   const endToday = new Date(); endToday.setHours(23,59,59,999);
   TREND_ROWS = [];
   TREND_QUALITY = { availTotal:0, undated:0, future:0 };
+  const D = DATE_DIAG = { rows: survey.length, dated:0, blank:0, unreadable:0, future:0, samples:new Map(),
+    months:new Map(), days:new Map(), earliest:0, latest:0, order:DATE_ORDER,
+    columns: survey.length ? Object.keys(survey[0]) : [] };
   survey.forEach(r => {
-    if((r['Res Available'] || '').toString().trim().toLowerCase() !== 'yes') return;
-    TREND_QUALITY.availTotal++;
-    const d = parseDate(r['Date']);
-    if(!d){ TREND_QUALITY.undated++; return; }
-    if(d > endToday){ TREND_QUALITY.future++; return; }     // future-dated typo
-    TREND_ROWS.push({ t: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), city: normalizeCity(r['Region']) });
+    const avail = (r['Res Available'] || '').toString().trim().toLowerCase() === 'yes';
+    if(avail) TREND_QUALITY.availTotal++;
+    const raw = r['Date'];
+    const txt = (raw === undefined || raw === null) ? '' : String(raw).trim();
+    let d = null, kind = 'ok';
+    if(!txt) kind = 'blank';
+    else { d = parseDate(raw); if(!d) kind = 'unreadable'; else if(d > endToday) kind = 'future'; }
+    if(kind !== 'ok'){
+      if(kind === 'blank') D.blank++;
+      else if(kind === 'unreadable'){ D.unreadable++; D.samples.set(txt, (D.samples.get(txt) || 0) + 1); }
+      else D.future++;
+      if(avail){ if(kind === 'future') TREND_QUALITY.future++; else TREND_QUALITY.undated++; }
+      return;
+    }
+    D.dated++;
+    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if(!D.earliest || t < D.earliest) D.earliest = t;
+    if(t > D.latest) D.latest = t;
+    const mk = d.getFullYear() * 100 + d.getMonth();
+    const mo = D.months.get(mk) || { all:0, avail:0 }; mo.all++; if(avail) mo.avail++; D.months.set(mk, mo);
+    const dy = D.days.get(t) || { all:0, avail:0 }; dy.all++; if(avail) dy.avail++; D.days.set(t, dy);
+    if(avail) TREND_ROWS.push({ t, city: normalizeCity(r['Region']) });
   });
+}
+
+// "Check the date data" — the evidence behind the chart, so a surprising number can be traced.
+function renderDateCheck(){
+  const body = document.getElementById('dateCheckBody'), det = document.getElementById('dateCheck');
+  if(!body || !DATE_DIAG) return;
+  const D = DATE_DIAG, f = fmt;
+  const nod = D.blank + D.unreadable;
+  const fd = t => t ? new Date(t).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
+  const months = Array.from(D.months.entries()).sort((a,b) => a[0] - b[0]);
+  const monthRows = months.slice(-24).map(([k, v]) => `<tr><td>${esc(new Date(Math.floor(k/100), k%100, 1).toLocaleDateString('en-IN', { month:'short', year:'numeric' }))}</td><td>${f(v.all)}</td><td>${f(v.avail)}</td></tr>`).join('');
+  const busiest = Array.from(D.days.entries()).sort((a,b) => b[1].all - a[1].all).slice(0, 5)
+    .map(([t, v]) => `<tr><td>${esc(fd(t))}</td><td>${f(v.all)}</td><td>${f(v.avail)}</td></tr>`).join('');
+  const samples = Array.from(D.samples.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8)
+    .map(([t, c]) => `<tr><td><span class="dc-code">${esc(t)}</span></td><td>${f(c)}</td></tr>`).join('');
+  const dateLike = D.columns.filter(c => /date|time|stamp|created|visit/i.test(c));
+  body.innerHTML = `
+    <div class="dc-facts">
+      <div class="dc-fact"><div class="l">Survey rows</div><div class="n">${f(D.rows)}</div></div>
+      <div class="dc-fact"><div class="l">Readable date</div><div class="n">${f(D.dated)}</div></div>
+      <div class="dc-fact ${D.blank ? 'bad' : ''}"><div class="l">Date cell empty</div><div class="n">${f(D.blank)}</div></div>
+      <div class="dc-fact ${D.unreadable ? 'bad' : ''}"><div class="l">Date not understood</div><div class="n">${f(D.unreadable)}</div></div>
+      <div class="dc-fact ${D.future ? 'bad' : ''}"><div class="l">Dated in the future</div><div class="n">${f(D.future)}</div></div>
+    </div>
+    <div>Dates run from <b>${esc(fd(D.earliest))}</b> to <b>${esc(fd(D.latest))}</b>. Numbers like 03/10/2026 are read ${D.order === 'MDY' ? 'month-first' : 'day-first'} (worked out from your data).</div>
+    <div class="dc-h">Rows by month (all visits · Available)</div>
+    <div class="dc-scroll"><table class="dc-table"><thead><tr><th>Month</th><th>All visits</th><th>Available</th></tr></thead><tbody>${monthRows}${nod ? `<tr class="nodate"><td>No usable date</td><td>${f(nod)}</td><td>${f(TREND_QUALITY.undated)}</td></tr>` : ''}</tbody></table></div>
+    <div class="dc-h">Busiest days — a large spike usually means rows were added or re-dated in bulk</div>
+    <div class="dc-scroll"><table class="dc-table"><thead><tr><th>Date</th><th>All visits</th><th>Available</th></tr></thead><tbody>${busiest}</tbody></table></div>
+    ${samples ? `<div class="dc-h">Date values that could not be understood</div><div class="dc-scroll"><table class="dc-table"><thead><tr><th>What the sheet contains</th><th>Rows</th></tr></thead><tbody>${samples}</tbody></table></div>` : ''}
+    <div class="dc-h">Columns found in Survey Data</div>
+    <div class="dc-cols">${D.columns.map(c => `<span class="dc-code">${esc(c)}</span>`).join('') || '—'}</div>
+    ${dateLike.length > 1 ? `<div style="margin-top:6px;">Date-like columns: ${dateLike.map(c => `<span class="dc-code">${esc(c)}</span>`).join(' ')} — the chart uses <span class="dc-code">Date</span>.</div>` : ''}`;
+  // open by default when a meaningful share of rows can't be placed on the calendar
+  if(det && D.rows && (nod + D.future) / D.rows > 0.02 && !det.dataset.userToggled) det.open = true;
 }
 
 function pctChange(cur, prev){ return prev > 0 ? (cur - prev) / prev * 100 : null; }
@@ -2208,14 +2306,25 @@ function drawTrend(){
   const qualEl = document.getElementById('trendQuality');
   if(!chartEl || !kpiEl || !tableEl) return;
 
-  // data-quality line: nothing is dropped without saying so
+  // data-quality line + banner: nothing is dropped without saying so
+  const alertEl = document.getElementById('trendAlert');
+  const q = TREND_QUALITY, bad = q.undated + q.future;
+  const covered = q.availTotal - bad;
   if(qualEl){
-    const q = TREND_QUALITY, bad = q.undated + q.future;
     qualEl.innerHTML = q.availTotal === 0 ? '' :
       (bad === 0 ? `All ${fmt(q.availTotal)} Available restaurants have a readable date.`
         : `<span class="trend-warn">${fmt(bad)} of ${fmt(q.availTotal)} Available restaurants are not charted</span> — ${fmt(q.undated)} have no readable date` +
           (q.future ? `, ${fmt(q.future)} are dated in the future` : '') + '.');
   }
+  if(alertEl){
+    const share = q.availTotal ? bad / q.availTotal : 0;
+    if(share > 0.05){
+      alertEl.style.display = 'block';
+      alertEl.innerHTML = `<b>This chart is incomplete.</b> Only ${fmt(covered)} of ${fmt(q.availTotal)} Available restaurants (${Math.round(covered / q.availTotal * 100)}%) have a date the dashboard can place on the calendar, ` +
+        `so daily and monthly numbers are lower than the true totals. Open <b>“Check the date data”</b> below to see which rows are affected and why.`;
+    } else { alertEl.style.display = 'none'; alertEl.innerHTML = ''; }
+  }
+  renderDateCheck();
 
   if(!TREND_ROWS.length){
     kpiEl.innerHTML = ''; tableEl.innerHTML = ''; if(legendEl) legendEl.innerHTML = '';
@@ -3123,6 +3232,8 @@ document.addEventListener('keydown', e => {
     if(again) again.focus();
   }
 });
+const _dc = document.getElementById('dateCheck');
+if(_dc) _dc.addEventListener('toggle', () => { _dc.dataset.userToggled = '1'; });
 document.getElementById('trendCity').addEventListener('change', e => {
   TREND_STATE.city = e.target.value;
   drawTrend();
