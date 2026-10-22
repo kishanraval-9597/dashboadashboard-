@@ -1026,6 +1026,11 @@
   .dc-cols{ display:flex; flex-wrap:wrap; gap:6px; }
   .dc-cols .dc-code{ white-space:nowrap; }
   .dc-code{ font-family:'JetBrains Mono',monospace; background:var(--brand-tint); border-radius:4px; padding:1px 6px; word-break:break-all; }
+  .loading-card{ display:flex; align-items:center; gap:18px; width:100%; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 26px; box-shadow:0 2px 4px rgba(33,30,26,.07), 0 10px 24px rgba(33,30,26,.08); }
+  .loading-title{ font-family:'Fraunces',serif; font-weight:600; font-size:20px; color:var(--ink); }
+  .loading-note{ font-size:13.5px; color:var(--ink-soft); margin-top:4px; line-height:1.5; }
+  .spinner{ flex:0 0 auto; width:30px; height:30px; border:3px solid #E3DED3; border-top-color:var(--brand); border-radius:50%; animation:dashspin .9s linear infinite; }
+  @keyframes dashspin{ to{ transform:rotate(360deg); } }
   .trend-line-key{ display:inline-block; width:18px; height:3px; background:#2C4A6E; border-radius:2px; margin-right:6px; vertical-align:middle; }
   .trend-warn{ color:#8F641D; font-weight:600; }
   .trend-legend{ display:flex; gap:18px; font-size:12px; color:var(--ink-soft); margin-bottom:8px; flex-wrap:wrap; }
@@ -1382,7 +1387,13 @@
   </div>
 
   <div class="overview-wrap" id="kpiGrid">
-    <!-- Unified overview card injected here -->
+    <div class="loading-card" id="loadingCard" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div>
+        <div class="loading-title">Loading your dashboard…</div>
+        <div class="loading-note" id="loadingNote">Fetching the latest survey data.</div>
+      </div>
+    </div>
   </div>
   <div class="stat-note" style="margin:14px 0 22px;">Available / Not Available percentages are relative to Completed surveys. Total Live Outlets in Market = New Restaurant Leads + Available Restaurants — the combined pool of confirmed, live-billing-relevant outlets across both sheets.</div>
 
@@ -3354,6 +3365,28 @@ function prefetchNamesWhenIdle(){
 
 const _tick = () => new Promise(r => setTimeout(r, 0));
 
+// While the very first load is running, say what is happening — and how long it might take — instead of
+// leaving a hollow page. Stops by itself as soon as the loading card is replaced by real data.
+let LOAD_TICK = null;
+function startLoadTicker(){
+  stopLoadTicker();
+  const t0 = Date.now();
+  const say = () => {
+    const note = document.getElementById('loadingNote');
+    if(!note){ stopLoadTicker(); return; }
+    const s = Math.round((Date.now() - t0) / 1000);
+    note.textContent =
+      s < 4  ? 'Fetching the latest survey data…' :
+      s < 20 ? `Still loading (${s}s). The first visit after an update can take up to 30 seconds — after that, every visit takes about a second.` :
+      s < 50 ? `The data service is waking up (${s}s) — nearly there…` :
+               `This is taking longer than usual (${s}s). The page keeps trying; you can also refresh it.`;
+    const st = document.getElementById('statusText');
+    if(st && /^Loading/.test(st.textContent)) st.textContent = s < 4 ? 'Loading…' : `Loading… ${s}s`;
+  };
+  LOAD_TICK = setInterval(say, 1000);
+}
+function stopLoadTicker(){ if(LOAD_TICK){ clearInterval(LOAD_TICK); LOAD_TICK = null; } }
+
 // Paint the page in stages so the top of the dashboard appears first, while the
 // heavier sections are still being worked out underneath.
 async function renderAll(survey, rest){
@@ -3407,6 +3440,7 @@ async function loadAll(isManual){
   try{
     errBanner.style.display = 'none';
     setStatus('loading', FIRST_LOAD ? 'Loading…' : 'Refreshing…');
+    if(FIRST_LOAD) startLoadTicker();
 
     // 1) start the network request straight away
     const netP = fetchPayloadText();
@@ -3473,12 +3507,14 @@ async function loadAll(isManual){
     } else if(ageMs <= 6 * 60 * 1000){ STALE_RETRIES = 0; }
   } catch(err){
     setStatus('err', 'Connection issue');
+    const lc = document.getElementById('loadingCard');
+    if(lc){ lc.innerHTML = '<div><div class="loading-title">The dashboard could not load its data</div><div class="loading-note">See the message below. It will try again automatically in a few minutes, or refresh this page.</div></div>'; }
     errBanner.style.display = 'block';
     errBanner.innerHTML = `Couldn't load data (${esc(err.message || 'network error')}). ` +
       `Please check your internet connection. It will retry automatically on the next auto-refresh.`;
     console.error(err);
   } finally {
-    if(seq === LOAD_SEQ) LOADING = false;
+    if(seq === LOAD_SEQ){ LOADING = false; stopLoadTicker(); }
   }
 }
 
