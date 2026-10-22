@@ -986,6 +986,8 @@
   .trend-kpi .n{ font-family:'Fraunces',serif; font-weight:700; font-size:28px; line-height:1.1; margin-top:6px; color:var(--ink); }
   .trend-kpi .n.up{ color:#1E6B67; } .trend-kpi .n.down{ color:#B44736; }
   .trend-kpi .s{ font-size:11px; color:var(--ink-soft); margin-top:4px; font-family:'JetBrains Mono',monospace; }
+  .trend-line-key{ display:inline-block; width:18px; height:3px; background:#2C4A6E; border-radius:2px; margin-right:6px; vertical-align:middle; }
+  .trend-warn{ color:#8F641D; font-weight:600; }
   .trend-legend{ display:flex; gap:18px; font-size:12px; color:var(--ink-soft); margin-bottom:8px; flex-wrap:wrap; }
   .trend-chart-wrap{ overflow-x:auto; border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:14px; }
   .trend-chart-wrap svg{ display:block; min-width:640px; width:100%; height:auto; }
@@ -1347,7 +1349,7 @@
   <!-- VISIT TREND -->
   <div class="section-head">
     <span class="tag">TREND</span>
-    <h2><span class="section-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2C4A6E" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 3 3 5-6"/></svg></span>Visits — Daily &amp; Monthly</h2>
+    <h2><span class="section-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2C4A6E" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 3 3 5-6"/></svg></span>Available Restaurants — Daily &amp; Monthly</h2>
   </div>
   <div class="card" id="trendCard" style="margin-bottom:16px;">
     <div class="trend-controls">
@@ -1361,13 +1363,11 @@
       </div>
     </div>
     <div class="trend-kpis" id="trendKpis"></div>
-    <div class="trend-legend">
-      <span><span class="metric-dot" style="background:#1E6B67;"></span>Restaurant available</span>
-      <span><span class="metric-dot" style="background:#B44736;"></span>Not available</span>
-    </div>
+    <div class="trend-legend" id="trendLegend"></div>
     <div class="trend-chart-wrap" id="trendChart"></div>
     <div class="trend-table-wrap" id="trendTable"></div>
-    <div class="stat-note">A visit = one survey row. DoD compares each day with the calendar day before it; MoM compares each month with the month before it. The current month is partial, so its MoM is compared with the same number of days last month.</div>
+    <div class="stat-note" id="trendQuality"></div>
+    <div class="stat-note">Counts Available restaurants only. DoD compares a day with the calendar day before it; MoM compares a month with the month before it. Today's count is still growing, so it is shown separately and left out of DoD, MoM and month totals until the day is complete.</div>
   </div>
 
   <!-- OUTLET MATRIX -->
@@ -1520,6 +1520,19 @@ function fetchSheetDirect(sheetKey){
   });
 }
 
+// Google sends real date cells as a raw value "Date(2026,9,3,14,20,11)" (month is
+// 0-based) next to a display string whose format depends on the sheet's locale.
+// Reading the raw value is exact; guessing day-vs-month from the display text is not.
+// (The server-side path used for company views already does the same.)
+const GVIZ_DATE_RE = /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+)(?:,(\d+))?)?\)$/;
+function isoFromGvizDate(raw){
+  const m = typeof raw === 'string' ? raw.match(GVIZ_DATE_RE) : null;
+  if(!m) return null;
+  const p2 = n => String(n).padStart(2, '0');
+  const datePart = `${m[1]}-${p2(Number(m[2]) + 1)}-${p2(m[3])}`;
+  return m[4] === undefined ? datePart : `${datePart} ${p2(m[4])}:${p2(m[5] || '0')}`;
+}
+
 function gvizToObjects(table){
   const cols = table.cols.map(c => (c.label || c.id || '').trim());
   return table.rows.map(row => {
@@ -1528,6 +1541,8 @@ function gvizToObjects(table){
       const key = cols[i];
       if(!key) return;
       if(!cell){ obj[key] = ''; return; }
+      const iso = isoFromGvizDate(cell.v);
+      if(iso){ obj[key] = iso; return; }
       const v = (cell.f !== undefined && cell.f !== null && cell.f !== '') ? cell.f : cell.v;
       obj[key] = (v === null || v === undefined) ? '' : v;
     });
@@ -1540,28 +1555,59 @@ function gvizToObjects(table){
 function filterByCompany(rows){ return rows; }
 
 
+// How day/month are ordered in numeric dates like "03/10/2026". Decided from the data
+// on every load (see detectDateOrder); real Google date cells never need this.
+let DATE_ORDER = 'DMY';
+const MONTH_NUM = { jan:0, january:0, feb:1, february:1, mar:2, march:2, apr:3, april:3, may:4, jun:5, june:5,
+  jul:6, july:6, aug:7, august:7, sep:8, sept:8, september:8, oct:9, october:9, nov:10, november:10, dec:11, december:11 };
+
+function detectDateOrder(rows){
+  let dmy = false, mdy = false;
+  for(let i = 0; i < rows.length && !(dmy && mdy); i++){
+    const v = rows[i]['Date'];
+    if(typeof v !== 'string') continue;
+    const m = v.match(/^\s*(\d{1,2})[-\/.](\d{1,2})[-\/.]\d{4}/);
+    if(!m) continue;
+    if(+m[1] > 12) dmy = true; else if(+m[2] > 12) mdy = true;
+  }
+  DATE_ORDER = (mdy && !dmy) ? 'MDY' : 'DMY';
+}
+
+// Reads: 2026-10-03 [14:20[:11]] · 03/10/2026 · 03-10-2026 · 3 Oct 2026 · 03-Oct-2026 ·
+// Oct 3, 2026 — each optionally followed by a time (24h or "2:20 PM").
+// Returns null for anything unreadable or impossible (31 Feb, month 13) rather than
+// letting JavaScript silently roll it into another month.
 function parseDate(s){
-  if(!s) return null;
-  const parts = s.trim().split(' ');
-  const dp = parts[0].split(/[-\/]/);
-  if(dp.length !== 3) return null;
-  let d, m, y;
-  if(dp[0].length === 4){
-    // ISO — unambiguous, this is what the server now sends for real Date cells.
-    y = parseInt(dp[0],10); m = parseInt(dp[1],10); d = parseInt(dp[2],10);
-  } else {
-    // Legacy text fallback (DD-MM-YYYY / DD/MM/YYYY), for any date-like text
-    // that didn't come through as a real gviz Date value.
-    d = parseInt(dp[0],10); m = parseInt(dp[1],10); y = parseInt(dp[2],10);
+  if(s === null || s === undefined || s === '') return null;
+  if(s instanceof Date) return isNaN(s.getTime()) ? null : s;
+  const str = String(s).trim();
+  let y, m, d, rest, mt;
+  if((mt = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[T\s]+(.*))?$/))){
+    y = +mt[1]; m = +mt[2]; d = +mt[3]; rest = mt[4];
+  } else if((mt = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})(?:[T\s,]+(.*))?$/))){
+    const a = +mt[1], b = +mt[2]; y = +mt[3]; rest = mt[4];
+    if(a > 12){ d = a; m = b; } else if(b > 12){ m = a; d = b; }
+    else if(DATE_ORDER === 'MDY'){ m = a; d = b; } else { d = a; m = b; }
+  } else if((mt = str.match(/^(\d{1,2})[-\s\/]([A-Za-z]{3,9})\.?,?[-\s\/]+(\d{4})(?:[T\s,]+(.*))?$/))){
+    const mo = MONTH_NUM[mt[2].toLowerCase()]; if(mo === undefined) return null;
+    d = +mt[1]; m = mo + 1; y = +mt[3]; rest = mt[4];
+  } else if((mt = str.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})(?:[T\s,]+(.*))?$/))){
+    const mo = MONTH_NUM[mt[1].toLowerCase()]; if(mo === undefined) return null;
+    m = mo + 1; d = +mt[2]; y = +mt[3]; rest = mt[4];
+  } else return null;
+  let hh = 0, mi = 0;
+  if(rest){
+    const tm = rest.match(/(\d{1,2}):(\d{2})(?::\d{2})?(?:\.\d+)?\s*([AaPp][Mm])?/);
+    if(tm){
+      hh = +tm[1]; mi = +tm[2];
+      const ap = (tm[3] || '').toLowerCase();
+      if(ap === 'pm' && hh < 12) hh += 12;
+      if(ap === 'am' && hh === 12) hh = 0;
+    }
   }
-  let hh=0, mm=0;
-  if(parts[1]){
-    const tp = parts[1].split(':');
-    hh = parseInt(tp[0],10) || 0;
-    mm = parseInt(tp[1],10) || 0;
-  }
-  const dt = new Date(y, m-1, d, hh, mm);
-  return isNaN(dt.getTime()) ? null : dt;
+  const dt = new Date(y, m - 1, d, hh, mi);
+  if(isNaN(dt.getTime()) || dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+  return dt;
 }
 
 function countBy(rows, key, normalize){
@@ -2072,24 +2118,34 @@ function buildBillingRowsFromSurvey(survey){
 }
 
 // ---------------------------------------------------------------------------
-// Visit trend — how many visits (survey rows) land per day and per month,
-// with day-over-day (DoD) and month-over-month (MoM) change. Drawn as plain
-// SVG, so no chart library is needed.
+// Available-restaurants trend — how many Available restaurants were surveyed per
+// day and per month, with day-over-day (DoD) and month-over-month (MoM) change.
+// "Not available" visits are deliberately left out. Drawn as plain SVG.
+//
+// Rules that keep the comparisons honest:
+//  • Only COMPLETE days feed DoD, MoM, month totals and the 7-day average. If the
+//    newest day in the data is today, it is still growing, so it is shown as
+//    "today so far" and compared against nothing until the day is over.
+//  • DoD is against the previous CALENDAR day; a day with zero visits has no
+//    percentage change (shown as "—") instead of an infinite one.
+//  • Rows with no readable date are counted and reported on the page, never
+//    silently dropped.
 // ---------------------------------------------------------------------------
-let TREND_ROWS = [];                          // { t: local-midnight ms, city, avail }
+let TREND_ROWS = [];                          // Available restaurants only: { t: local-midnight ms, city }
+let TREND_QUALITY = { availTotal:0, undated:0, future:0 };
 const TREND_STATE = { mode:'daily', city:'ALL' };
 
 function buildTrendIndex(survey){
   const endToday = new Date(); endToday.setHours(23,59,59,999);
   TREND_ROWS = [];
+  TREND_QUALITY = { availTotal:0, undated:0, future:0 };
   survey.forEach(r => {
+    if((r['Res Available'] || '').toString().trim().toLowerCase() !== 'yes') return;
+    TREND_QUALITY.availTotal++;
     const d = parseDate(r['Date']);
-    if(!d || d > endToday) return;           // undated rows and future-dated typos are left out
-    TREND_ROWS.push({
-      t: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
-      city: normalizeCity(r['Region']),
-      avail: (r['Res Available'] || '').toString().trim().toLowerCase() === 'yes'
-    });
+    if(!d){ TREND_QUALITY.undated++; return; }
+    if(d > endToday){ TREND_QUALITY.future++; return; }     // future-dated typo
+    TREND_ROWS.push({ t: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), city: normalizeCity(r['Region']) });
   });
 }
 
@@ -2105,132 +2161,162 @@ function chgPill(v){
   return `<span class="chg ${r > 0 ? 'up' : r < 0 ? 'down' : 'flat'}">${r > 0 ? '▲ ' : r < 0 ? '▼ ' : ''}${Math.abs(r)}%</span>`;
 }
 
-function trendChartSVG(items, width){
+// items: [{ v, avg (or null), label, tip, partial }]
+function trendChartSVG(items, width, withAvg){
   const W = Math.max(240, Math.round(width || 920)), narrow = W < 560;
-  const H = narrow ? 230 : 270, ml = narrow ? 40 : 46, mr = 8, mt = 14, mb = 46;
+  const H = narrow ? 230 : 270, ml = narrow ? 40 : 46, mr = 8, mt = 16, mb = 46;
   const iw = W - ml - mr, ih = H - mt - mb;
-  const maxV = Math.max(1, ...items.map(i => i.a + i.n));
+  const maxV = Math.max(1, ...items.map(i => Math.max(i.v, i.avg || 0)));
   const mag = Math.pow(10, Math.floor(Math.log10(maxV)));
   const niceMax = [1, 2, 2.5, 5, 10].map(m => m * mag).find(v => v >= maxV);
   const y = v => mt + ih - (v / niceMax) * ih;
   const slot = iw / items.length, bw = Math.min(40, slot * 0.68);
+  const cx = i => ml + slot * i + slot / 2;
   let g = '';
   for(let k = 0; k <= 4; k++){
     const v = niceMax * k / 4;
     g += `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${k ? 'stroke-dasharray="3 4"' : ''}/>` +
          `<text x="${ml - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${fmt(Math.round(v))}</text>`;
   }
-  const step = Math.max(1, Math.ceil(54 / slot));   // keep x-axis labels from colliding
+  const step = Math.max(1, Math.ceil(54 / slot));          // keep x-axis labels from colliding
   items.forEach((it, i) => {
-    const x = ml + slot * i + (slot - bw) / 2;
+    const x = cx(i) - bw / 2;
     g += `<g class="tb"><title>${esc(it.tip)}</title>` +
-         `<rect x="${x}" y="${y(it.a)}" width="${bw}" height="${(it.a / niceMax) * ih}" fill="#1E6B67" rx="2"/>` +
-         `<rect x="${x}" y="${y(it.a + it.n)}" width="${bw}" height="${(it.n / niceMax) * ih}" fill="#B44736" rx="2"/>` +
+         `<rect x="${x}" y="${y(it.v)}" width="${bw}" height="${(it.v / niceMax) * ih}" fill="#1E6B67" rx="2"` +
+           `${it.partial ? ' fill-opacity=".38" stroke="#1E6B67" stroke-dasharray="3 2"' : ''}/>` +
          `<rect x="${ml + slot * i}" y="${mt}" width="${slot}" height="${ih}" fill="transparent"/></g>`;
-    if(slot >= 34 && it.a + it.n > 0){
-      g += `<text x="${x + bw / 2}" y="${y(it.a + it.n) - 5}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${fmt(it.a + it.n)}</text>`;
+    if(slot >= 34 && it.v > 0){
+      g += `<text x="${cx(i)}" y="${y(it.v) - 5}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)" stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${fmt(it.v)}</text>`;
     }
     if((items.length - 1 - i) % step === 0){
-      const lx = x + bw / 2, atEdge = lx + 22 > W;   // last label would run off the right edge — right-align it
-      g += `<text x="${atEdge ? W - 2 : lx}" y="${H - mb + 16}" text-anchor="${atEdge ? 'end' : 'middle'}" font-size="11" fill="var(--ink-soft)">${esc(it.label)}</text>`;
+      const atEdge = cx(i) + 22 > W;                        // last label would run off the edge — right-align it
+      g += `<text x="${atEdge ? W - 2 : cx(i)}" y="${H - mb + 16}" text-anchor="${atEdge ? 'end' : 'middle'}" font-size="11" fill="var(--ink-soft)">${esc(it.label)}</text>`;
     }
   });
-  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Visits chart">${g}</svg>`;
+  if(withAvg){
+    const pts = items.map((it, i) => it.avg == null ? null : `${cx(i).toFixed(1)},${y(it.avg).toFixed(1)}`).filter(Boolean);
+    if(pts.length > 1) g += `<polyline points="${pts.join(' ')}" fill="none" stroke="#2C4A6E" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Available restaurants chart">${g}</svg>`;
 }
 
 function drawTrend(){
   const chartEl = document.getElementById('trendChart');
   const kpiEl = document.getElementById('trendKpis');
   const tableEl = document.getElementById('trendTable');
+  const legendEl = document.getElementById('trendLegend');
+  const qualEl = document.getElementById('trendQuality');
   if(!chartEl || !kpiEl || !tableEl) return;
+
+  // data-quality line: nothing is dropped without saying so
+  if(qualEl){
+    const q = TREND_QUALITY, bad = q.undated + q.future;
+    qualEl.innerHTML = q.availTotal === 0 ? '' :
+      (bad === 0 ? `All ${fmt(q.availTotal)} Available restaurants have a readable date.`
+        : `<span class="trend-warn">${fmt(bad)} of ${fmt(q.availTotal)} Available restaurants are not charted</span> — ${fmt(q.undated)} have no readable date` +
+          (q.future ? `, ${fmt(q.future)} are dated in the future` : '') + '.');
+  }
+
   if(!TREND_ROWS.length){
-    kpiEl.innerHTML = ''; tableEl.innerHTML = '';
-    chartEl.innerHTML = '<div class="stat-note" style="padding:14px;">No dated survey rows to chart yet.</div>';
+    kpiEl.innerHTML = ''; tableEl.innerHTML = ''; if(legendEl) legendEl.innerHTML = '';
+    chartEl.innerHTML = '<div class="stat-note" style="padding:14px;">No dated Available restaurants to chart yet.</div>';
     return;
   }
 
-  // "Latest day" = newest date in the data (not "today"), so a lagging sheet still reads correctly.
-  const chartW = chartEl.clientWidth || 640;   // draw at the real width so text stays readable on phones
+  const addDays = (d, k) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
+  const dayKey = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const now = new Date();
+  const todayT = dayKey(now);
   const latestT = TREND_ROWS.reduce((m, r) => r.t > m ? r.t : m, 0);
   const minT = TREND_ROWS.reduce((m, r) => r.t < m ? r.t : m, latestT);
   const latest = new Date(latestT);
-  const now = new Date();
-  const isToday = latestT === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const todayInProgress = latestT === todayT;
+  const ref = todayInProgress ? addDays(latest, -1) : latest;     // last COMPLETE day
+  const chartW = chartEl.clientWidth || 640;
 
   const rows = TREND_STATE.city === 'ALL' ? TREND_ROWS : TREND_ROWS.filter(r => r.city === TREND_STATE.city);
   const day = new Map();
-  rows.forEach(r => {
-    let o = day.get(r.t);
-    if(!o){ o = { a:0, n:0 }; day.set(r.t, o); }
-    if(r.avail) o.a++; else o.n++;
-  });
-  const addDays = (d, k) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
-  const dayAt = d => day.get(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) || { a:0, n:0 };
-  const tot = o => o.a + o.n;
-  const rangeSum = (from, to) => {
-    let a = 0, n = 0;
-    for(let d = from; d <= to; d = addDays(d, 1)){ const o = dayAt(d); a += o.a; n += o.n; }
-    return { a, n };
-  };
+  rows.forEach(r => day.set(r.t, (day.get(r.t) || 0) + 1));
+  const dayAt = d => day.get(dayKey(d)) || 0;
+  const rangeSum = (from, to) => { let n = 0; for(let d = from; d <= to; d = addDays(d, 1)) n += dayAt(d); return n; };
+  const avg7 = d => rangeSum(addDays(d, -6), d) / 7;
   const fDay = d => d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
   const fMon = d => d.toLocaleDateString('en-IN', { month:'short', year:'numeric' });
+  const monShort = d => d.toLocaleDateString('en-IN', { month:'short' });
 
-  // ---- headline tiles (always shown, whichever view is selected)
-  const cur = dayAt(latest), prv = dayAt(addDays(latest, -1));
-  const dod = pctChange(tot(cur), tot(prv));
-  const mStart = new Date(latest.getFullYear(), latest.getMonth(), 1);
-  const pmStart = new Date(latest.getFullYear(), latest.getMonth() - 1, 1);
-  const pmDays = new Date(latest.getFullYear(), latest.getMonth(), 0).getDate();
-  const span = Math.min(latest.getDate(), pmDays);
-  const mtd = rangeSum(mStart, latest);
+  if(ref.getTime() < minT){            // the only data so far is today's unfinished count
+    kpiEl.innerHTML = `<div class="trend-kpi"><div class="l">Today so far · ${esc(fDay(latest))}</div><div class="n">${fmt(dayAt(latest))}</div><div class="s">No complete day yet to compare with</div></div>`;
+    chartEl.innerHTML = ''; tableEl.innerHTML = ''; if(legendEl) legendEl.innerHTML = '';
+    return;
+  }
+
+  // ---- headline tiles — every comparison uses complete days only
+  const refN = dayAt(ref), prevN = dayAt(addDays(ref, -1));
+  const dod = pctChange(refN, prevN);
+  const mStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
+  const pmStart = new Date(ref.getFullYear(), ref.getMonth() - 1, 1);
+  const pmDays = new Date(ref.getFullYear(), ref.getMonth(), 0).getDate();
+  const span = Math.min(ref.getDate(), pmDays);
+  const mtd = rangeSum(mStart, ref);
   const pmSame = rangeSum(pmStart, addDays(pmStart, span - 1));
-  const mom = pctChange(tot(mtd), tot(pmSame));
+  const mom = pctChange(mtd, pmSame);
   const cls = v => v === null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '';
   kpiEl.innerHTML = `
-    <div class="trend-kpi"><div class="l">Latest day · ${esc(fDay(latest))}</div><div class="n">${fmt(tot(cur))}</div>
-      <div class="s">${fmt(cur.a)} available · ${fmt(cur.n)} not${isToday ? ' · day in progress' : ''}</div></div>
+    <div class="trend-kpi"><div class="l">${todayInProgress ? 'Yesterday' : 'Latest day'} · ${esc(fDay(ref))}</div><div class="n">${fmt(refN)}</div>
+      <div class="s">7-day avg ${fmt(Math.round(avg7(ref)))}/day${todayInProgress ? ` · today so far ${fmt(dayAt(latest))}` : ''}</div></div>
     <div class="trend-kpi"><div class="l">Day-over-day</div><div class="n ${cls(dod)}">${chgText(dod)}</div>
-      <div class="s">${fmt(tot(cur))} vs ${fmt(tot(prv))} on ${esc(fDay(addDays(latest, -1)))}</div></div>
-    <div class="trend-kpi"><div class="l">Month to date · ${esc(fMon(latest))}</div><div class="n">${fmt(tot(mtd))}</div>
-      <div class="s">1–${latest.getDate()} ${esc(latest.toLocaleDateString('en-IN', { month:'short' }))}</div></div>
+      <div class="s">${fmt(refN)} vs ${fmt(prevN)} on ${esc(fDay(addDays(ref, -1)))}</div></div>
+    <div class="trend-kpi"><div class="l">Month to date · ${esc(fMon(ref))}</div><div class="n">${fmt(mtd)}</div>
+      <div class="s">1–${ref.getDate()} ${esc(monShort(ref))} · ${fmt(Math.round(mtd / ref.getDate()))}/day</div></div>
     <div class="trend-kpi"><div class="l">Month-over-month</div><div class="n ${cls(mom)}">${chgText(mom)}</div>
-      <div class="s">${fmt(tot(mtd))} vs ${fmt(tot(pmSame))} (1–${span} ${esc(pmStart.toLocaleDateString('en-IN', { month:'short' }))})</div></div>`;
+      <div class="s">${fmt(mtd)} vs ${fmt(pmSame)} (1–${span} ${esc(monShort(pmStart))})</div></div>`;
+
+  const dot = (bg, extra) => `<span class="metric-dot" style="background:${bg};${extra || ''}"></span>`;
 
   if(TREND_STATE.mode === 'daily'){
-    // last 30 calendar days ending at the latest data day
+    // last 30 calendar days ending at the newest day in the data
     const items = [], tbl = [];
     for(let i = 29; i >= 0; i--){
-      const d = addDays(latest, -i), o = dayAt(d), p = dayAt(addDays(d, -1));
-      const ch = pctChange(tot(o), tot(p));
-      items.push({ a:o.a, n:o.n, label:d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }),
-        tip:`${fDay(d)}: ${tot(o)} visits (${o.a} available · ${o.n} not available) · DoD ${chgText(ch)}` });
-      tbl.push({ d, o, ch });
+      const d = addDays(latest, -i), v = dayAt(d);
+      const partial = todayInProgress && dayKey(d) === todayT;
+      const dodV = partial ? null : pctChange(v, dayAt(addDays(d, -1)));
+      const wowV = partial ? null : pctChange(v, dayAt(addDays(d, -7)));
+      items.push({ v, partial, avg: partial ? null : avg7(d), label: d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }),
+        tip: `${fDay(d)}: ${v} Available restaurants${partial ? ' (today — still counting)' : ` · vs previous day ${chgText(dodV)} · vs same day last week ${chgText(wowV)}`}` });
+      tbl.push({ d, v, partial, dodV, wowV });
     }
-    chartEl.innerHTML = trendChartSVG(items, chartW);
-    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Date</th><th>Visits</th><th class="opt">Available</th><th class="opt">Not available</th><th>vs previous day</th></tr></thead><tbody>` +
-      tbl.reverse().map(r => `<tr><td>${esc(fDay(r.d))}</td><td><b>${fmt(tot(r.o))}</b></td><td class="opt">${fmt(r.o.a)}</td><td class="opt">${fmt(r.o.n)}</td><td>${chgPill(r.ch)}</td></tr>`).join('') +
+    chartEl.innerHTML = trendChartSVG(items, chartW, true);
+    if(legendEl) legendEl.innerHTML = `<span>${dot('#1E6B67')}Available restaurants per day</span><span><span class="trend-line-key"></span>7-day average</span>` +
+      (todayInProgress ? `<span>${dot('#1E6B67', 'opacity:.38;')}Today — still counting</span>` : '');
+    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Date</th><th>Available</th><th>vs previous day</th><th class="opt">vs same day last week</th></tr></thead><tbody>` +
+      tbl.reverse().map(r => `<tr><td>${esc(fDay(r.d))}</td><td><b>${fmt(r.v)}</b></td>` +
+        (r.partial ? `<td colspan="1" style="color:var(--ink-soft);font-family:'Inter',sans-serif;">today so far</td><td class="opt"></td>`
+                   : `<td>${chgPill(r.dodV)}</td><td class="opt">${chgPill(r.wowV)}</td>`) + `</tr>`).join('') +
       `</tbody></table>`;
   } else {
+    // months up to the last complete day; the current month is partial until it ends
     const idx = d => d.getFullYear() * 12 + d.getMonth();
-    const curIdx = idx(latest), startIdx = Math.max(idx(new Date(minT)), curIdx - 11);
+    const curIdx = idx(ref), startIdx = Math.max(idx(new Date(minT)), curIdx - 11);
     const items = [], tbl = [];
     for(let k = startIdx; k <= curIdx; k++){
       const ms = new Date(Math.floor(k / 12), k % 12, 1);
       const me = new Date(Math.floor(k / 12), k % 12 + 1, 0);
-      const partial = k === curIdx && latest.getDate() < me.getDate();
-      const to = partial ? latest : me;
-      const o = rangeSum(ms, to);
+      const partial = k === curIdx && ref.getDate() < me.getDate();
+      const to = partial ? ref : me;
+      const v = rangeSum(ms, to);
       const ps = new Date(ms.getFullYear(), ms.getMonth() - 1, 1);
       const pe = new Date(ms.getFullYear(), ms.getMonth(), 0);
-      const pTo = partial ? (addDays(ps, latest.getDate() - 1) < pe ? addDays(ps, latest.getDate() - 1) : pe) : pe;
-      const ch = pctChange(tot(o), tot(rangeSum(ps, pTo)));
+      const pTo = partial ? (addDays(ps, ref.getDate() - 1) < pe ? addDays(ps, ref.getDate() - 1) : pe) : pe;
+      const ch = pctChange(v, rangeSum(ps, pTo));
       const label = ms.toLocaleDateString('en-IN', { month:'short', year:'2-digit' }) + (partial ? '*' : '');
-      items.push({ a:o.a, n:o.n, label, tip:`${fMon(ms)}${partial ? ` (1–${latest.getDate()}, month in progress)` : ''}: ${tot(o)} visits (${o.a} available · ${o.n} not available) · MoM ${chgText(ch)}` });
-      tbl.push({ ms, o, ch, partial });
+      items.push({ v, partial, avg:null, label, tip: `${fMon(ms)}${partial ? ` (1–${ref.getDate()}, month in progress)` : ''}: ${v} Available restaurants · vs previous month ${chgText(ch)}` });
+      tbl.push({ ms, v, ch, partial });
     }
-    chartEl.innerHTML = trendChartSVG(items, chartW);
-    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Month</th><th>Visits</th><th class="opt">Available</th><th class="opt">Not available</th><th>vs previous month</th></tr></thead><tbody>` +
-      tbl.reverse().map(r => `<tr><td>${esc(fMon(r.ms))}${r.partial ? ` <span style="font-weight:400;color:var(--ink-soft);">(1–${latest.getDate()}, so far)</span>` : ''}</td><td><b>${fmt(tot(r.o))}</b></td><td class="opt">${fmt(r.o.a)}</td><td class="opt">${fmt(r.o.n)}</td><td>${chgPill(r.ch)}</td></tr>`).join('') +
+    chartEl.innerHTML = trendChartSVG(items, chartW, false);
+    if(legendEl) legendEl.innerHTML = `<span>${dot('#1E6B67')}Available restaurants per month</span>` +
+      (items.some(i => i.partial) ? `<span>${dot('#1E6B67', 'opacity:.38;')}* Month in progress (complete days only)</span>` : '');
+    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Month</th><th>Available</th><th>vs previous month</th></tr></thead><tbody>` +
+      tbl.reverse().map(r => `<tr><td>${esc(fMon(r.ms))}${r.partial ? ` <span style="font-weight:400;color:var(--ink-soft);">(1–${ref.getDate()}, so far)</span>` : ''}</td><td><b>${fmt(r.v)}</b></td><td>${chgPill(r.ch)}</td></tr>`).join('') +
       `</tbody></table>`;
   }
 }
@@ -2975,6 +3061,7 @@ async function loadAll(isManual){
       throw new Error('No rows matched — check the company name matches what appears in Employee Name, or use company=ALL.');
     }
 
+    detectDateOrder(survey);
     buildKpis(survey, rest);
     buildTicker(survey, rest);
     renderDataThrough(survey, rest);
