@@ -4,8 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Field Survey Ops — Live Dashboard</title>
+<script>
+// Start fetching the data the instant the page begins to load — before the rest of
+// the page has even been parsed. The dashboard picks this request up when it is ready.
+(function(){
+  try{
+    var c = new URLSearchParams(location.search).get('company') || 'ALL';
+    var p = fetch('/api/dashboard-data?company=' + encodeURIComponent(c))
+      .then(function(r){ return r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)); });
+    p.catch(function(){});
+    window.__early = { company: c, p: p };
+  }catch(e){}
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
 <style>
   :root{
     --paper:#F6F3ED;
@@ -1591,6 +1606,11 @@ let DATE_ORDER = 'DMY';
 const MONTH_NUM = { jan:0, january:0, feb:1, february:1, mar:2, march:2, apr:3, april:3, may:4, jun:5, june:5,
   jul:6, july:6, aug:7, august:7, sep:8, sept:8, september:8, oct:9, october:9, nov:10, november:10, dec:11, december:11 };
 
+// One place that changes the day/month order, so the date-reading memory can never go stale.
+function setDateOrder(order){
+  if(order !== DATE_ORDER){ DATE_ORDER = order; _DATE_MEMO.clear(); }
+}
+
 function detectDateOrder(rows){
   let dmy = false, mdy = false;
   for(let i = 0; i < rows.length && !(dmy && mdy); i++){
@@ -1600,7 +1620,7 @@ function detectDateOrder(rows){
     if(!m) continue;
     if(+m[1] > 12) dmy = true; else if(+m[2] > 12) mdy = true;
   }
-  DATE_ORDER = (mdy && !dmy) ? 'MDY' : 'DMY';
+  setDateOrder((mdy && !dmy) ? 'MDY' : 'DMY');
 }
 
 // Reads: 2026-10-03 [14:20[:11]] · 03/10/2026 · 03-10-26 · 03.10.2026 · 3 Oct 2026 ·
@@ -1608,7 +1628,14 @@ function detectDateOrder(rows){
 // (e.g. 46298.6) — each optionally followed by a time (24h or "2:20 PM").
 // Returns null for anything unreadable or impossible (31 Feb, month 13) rather than
 // letting JavaScript silently roll it into another month.
+const _DATE_MEMO = new Map();   // date text -> Date (cleared when the day/month order changes)
 function parseDate(s){
+  if(typeof s !== 'string') return _parseDateRaw(s);
+  let r = _DATE_MEMO.get(s);
+  if(r === undefined){ r = _parseDateRaw(s); if(_DATE_MEMO.size > 20000) _DATE_MEMO.clear(); _DATE_MEMO.set(s, r); }
+  return r;
+}
+function _parseDateRaw(s){
   if(s === null || s === undefined || s === '') return null;
   if(s instanceof Date) return isNaN(s.getTime()) ? null : s;
   // spreadsheet serial number (days since 30 Dec 1899) — what Excel/Sheets store under a date format
@@ -1708,7 +1735,22 @@ const CITY_GROUPS = {
 // Values that are junk/state-names/mis-encoded text rather than a real place, folded into "Other"
 const CITY_JUNK = new Set(['maharashtra','west bengal','mall']);
 
+// "Yes" / "No" answers come in a handful of spellings ("Yes", "yes ", "YES" ...) — decide each once.
+const _YESNO = new Map();
+function _yesno(v){
+  let r = _YESNO.get(v);
+  if(r === undefined){ const t = (v == null ? '' : String(v)).trim().toLowerCase(); r = t === 'yes' ? 1 : t === 'no' ? 2 : 0; _YESNO.set(v, r); }
+  return r;
+}
+function isYes(v){ return _yesno(v) === 1; }
+function isNo(v){ return _yesno(v) === 2; }
+const _CITY_MEMO = new Map();
 function normalizeCity(raw){
+  let r = _CITY_MEMO.get(raw);
+  if(r === undefined){ r = _normalizeCityRaw(raw); if(_CITY_MEMO.size > 20000) _CITY_MEMO.clear(); _CITY_MEMO.set(raw, r); }
+  return r;
+}
+function _normalizeCityRaw(raw){
   const v = (raw||'').toString().trim();
   if(!v) return 'Unknown';
   const key = v.toLowerCase();
@@ -1745,7 +1787,13 @@ const OFFLINE_SOFTWARE = new Set(['manual billing (pen paper)','menson','prime',
 const NOT_ANSWERED_SOFTWARE = new Set(['-','not ready to share details','not use any billing software',
   'there is no software available','they do no use any software for billing','']);
 
+const _CLASS_MEMO = new Map();
 function classifySoftware(v){
+  let r = _CLASS_MEMO.get(v);
+  if(r === undefined){ r = _classifySoftwareRaw(v); if(_CLASS_MEMO.size > 20000) _CLASS_MEMO.clear(); _CLASS_MEMO.set(v, r); }
+  return r;
+}
+function _classifySoftwareRaw(v){
   const s = (v || '').toString().trim().toLowerCase();
   if(s === 'petpooja') return 'petpooja';
   if(NOT_ANSWERED_SOFTWARE.has(s)) return 'notAnswered';
@@ -1759,7 +1807,7 @@ function computeOutletMatrix(survey, rest){
   const grand = { visited: survey.length, available: 0, newRest: rest.length };
 
   survey.forEach(r => {
-    const isAvailable = (r['Res Available']||'').trim().toLowerCase() === 'yes';
+    const isAvailable = isYes(r['Res Available']);
     if(isAvailable) grand.available++;
     const city = normalizeCity(r['Region']);
     if(!byCity[city]) return;
@@ -1781,7 +1829,7 @@ function computeCompetitive(survey){
   const grand = { available:0, petpooja:0, manualOffline:0, cloudCompetition:0, notAnswered:0 };
 
   survey.forEach(r => {
-    const isAvailable = (r['Res Available']||'').trim().toLowerCase() === 'yes';
+    const isAvailable = isYes(r['Res Available']);
     if(!isAvailable) return;
     grand.available++;
     const bucket = classifySoftware(r['Ex Software']);
@@ -2078,7 +2126,13 @@ const SOFTWARE_ALIASES = [
 const OFFLINE_LABELS = new Set(['Manual Billing','Menson','PRIME','Aryan Softwares','My Bill Book']);
 const MAX_NAMED_OTHERS = 8; // beyond Petpooja + the offline tools, show this many top names; the rest → "Others"
 
+const _LABEL_MEMO = new Map();
 function softwareLabel(raw){
+  let r = _LABEL_MEMO.get(raw);
+  if(r === undefined){ r = _softwareLabelRaw(raw); if(_LABEL_MEMO.size > 20000) _LABEL_MEMO.clear(); _LABEL_MEMO.set(raw, r); }
+  return r;
+}
+function _softwareLabelRaw(raw){
   const key = raw.toLowerCase().replace(/\s+/g, ' ').trim();
   for(const [re, label] of SOFTWARE_ALIASES){ if(re.test(key)) return label; }
   return raw.replace(/\s+/g, ' ').trim();
@@ -2089,7 +2143,7 @@ function softwareLabel(raw){
 let SW_INDEX = { items: [] };
 
 function buildBillingRowsFromSurvey(survey){
-  const avail = survey.filter(r => (r['Res Available']||'').toString().trim().toLowerCase() === 'yes');
+  const avail = survey.filter(r => isYes(r['Res Available']));
 
   // label -> { total, byCity }
   const groups = {};
@@ -2174,41 +2228,61 @@ function buildBillingRowsFromSurvey(survey){
 //  • Rows with no readable date are counted and reported on the page, never
 //    silently dropped.
 // ---------------------------------------------------------------------------
-let TREND_ROWS = [];                          // Available restaurants only: { t: local-midnight ms, city }
-let TREND_QUALITY = { availTotal:0, undated:0, future:0 };
+let TREND_BUCKETS = [];                       // one per (day, city): { t: local-midnight ms, city, all, yes, no }  (yes = Available, no = Not available)
+let TREND_QUALITY = { availTotal:0, undated:0, future:0, noAnswer:0 };
 let DATE_DIAG = null;                         // how every survey row's date was read — shown in "Check the date data"
 const TREND_STATE = { mode:'daily', city:'ALL' };
 
 function buildTrendIndex(survey){
   const endToday = new Date(); endToday.setHours(23,59,59,999);
-  TREND_ROWS = [];
-  TREND_QUALITY = { availTotal:0, undated:0, future:0 };
+  TREND_BUCKETS = [];
+  TREND_QUALITY = { availTotal:0, undated:0, future:0, noAnswer:0 };
   const D = DATE_DIAG = { rows: survey.length, dated:0, blank:0, unreadable:0, future:0, samples:new Map(),
     months:new Map(), days:new Map(), earliest:0, latest:0, order:DATE_ORDER,
-    columns: survey.length ? Object.keys(survey[0]) : [] };
-  survey.forEach(r => {
-    const avail = (r['Res Available'] || '').toString().trim().toLowerCase() === 'yes';
-    if(avail) TREND_QUALITY.availTotal++;
+    columns: SHEET_COLUMNS || (survey.length ? Object.keys(survey[0]) : []) };
+
+  // A sheet has a few hundred distinct dates but tens of thousands of rows, so each distinct
+  // date text is understood once and rows just count against it.
+  const infos = new Map();        // date text -> { kind, t, mk, all, avail, cities }   (insertion order = first appearance)
+  for(let i = 0; i < survey.length; i++){
+    const r = survey[i];
+    const yes = isYes(r['Res Available']), no = !yes && isNo(r['Res Available']);
     const raw = r['Date'];
     const txt = (raw === undefined || raw === null) ? '' : String(raw).trim();
-    let d = null, kind = 'ok';
-    if(!txt) kind = 'blank';
-    else { d = parseDate(raw); if(!d) kind = 'unreadable'; else if(d > endToday) kind = 'future'; }
-    if(kind !== 'ok'){
-      if(kind === 'blank') D.blank++;
-      else if(kind === 'unreadable'){ D.unreadable++; D.samples.set(txt, (D.samples.get(txt) || 0) + 1); }
-      else D.future++;
-      if(avail){ if(kind === 'future') TREND_QUALITY.future++; else TREND_QUALITY.undated++; }
-      return;
+    let info = infos.get(txt);
+    if(info === undefined){
+      info = { kind:'ok', t:0, mk:0, all:0, avail:0, cities:null };
+      if(!txt) info.kind = 'blank';
+      else {
+        const d = parseDate(raw);
+        if(!d) info.kind = 'unreadable';
+        else if(d > endToday) info.kind = 'future';
+        else { info.t = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); info.mk = d.getFullYear() * 100 + d.getMonth(); info.cities = new Map(); }
+      }
+      infos.set(txt, info);
     }
-    D.dated++;
-    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    if(!D.earliest || t < D.earliest) D.earliest = t;
-    if(t > D.latest) D.latest = t;
-    const mk = d.getFullYear() * 100 + d.getMonth();
-    const mo = D.months.get(mk) || { all:0, avail:0 }; mo.all++; if(avail) mo.avail++; D.months.set(mk, mo);
-    const dy = D.days.get(t) || { all:0, avail:0 }; dy.all++; if(avail) dy.avail++; D.days.set(t, dy);
-    if(avail) TREND_ROWS.push({ t, city: normalizeCity(r['Region']) });
+    info.all++;
+    if(yes){ TREND_QUALITY.availTotal++; info.avail++; }
+    if(!yes && !no) TREND_QUALITY.noAnswer++;
+    if(info.kind === 'ok'){
+      const city = normalizeCity(r['Region']);
+      let b = info.cities.get(city);
+      if(b === undefined){ b = { t: info.t, city, all:0, yes:0, no:0 }; info.cities.set(city, b); }
+      b.all++; if(yes) b.yes++; else if(no) b.no++;
+    }
+  }
+  infos.forEach((info, txt) => {
+    if(info.kind === 'blank'){ D.blank += info.all; TREND_QUALITY.undated += info.avail; }
+    else if(info.kind === 'unreadable'){ D.unreadable += info.all; D.samples.set(txt, info.all); TREND_QUALITY.undated += info.avail; }
+    else if(info.kind === 'future'){ D.future += info.all; TREND_QUALITY.future += info.avail; }
+    else {
+      D.dated += info.all;
+      if(!D.earliest || info.t < D.earliest) D.earliest = info.t;
+      if(info.t > D.latest) D.latest = info.t;
+      const mo = D.months.get(info.mk) || { all:0, avail:0 }; mo.all += info.all; mo.avail += info.avail; D.months.set(info.mk, mo);
+      const dy = D.days.get(info.t) || { all:0, avail:0 }; dy.all += info.all; dy.avail += info.avail; D.days.set(info.t, dy);
+      info.cities.forEach(b => TREND_BUCKETS.push(b));
+    }
   });
 }
 
@@ -2226,6 +2300,25 @@ function renderDateCheck(){
   const samples = Array.from(D.samples.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8)
     .map(([t, c]) => `<tr><td><span class="dc-code">${esc(t)}</span></td><td>${f(c)}</td></tr>`).join('');
   const dateLike = D.columns.filter(c => /date|time|stamp|created|visit/i.test(c));
+  // ---- fast feed only: which column each row's date came from, and which sheet rows are still undated
+  const P = LAST_PAYLOAD;
+  let sourcesHtml = '', examplesHtml = '';
+  if(P && P.dateSources){
+    const src = Object.entries(P.dateSources).sort((a, b) => b[1] - a[1]);
+    sourcesHtml = `<div class="dc-h">Where each row's date came from</div>
+      <div class="dc-scroll"><table class="dc-table"><thead><tr><th>Sheet column</th><th>Rows dated from it</th></tr></thead><tbody>` +
+      src.map(([c, n]) => `<tr><td><span class="dc-code">${esc(c)}</span></td><td>${f(n)}</td></tr>`).join('') +
+      `<tr class="${P.dateUnresolved ? 'nodate' : ''}"><td>No readable date in any column</td><td>${f(P.dateUnresolved || 0)}</td></tr></tbody></table></div>
+      <div style="margin-top:6px;color:var(--ink-soft);">${P.readAs === 'csv'
+        ? 'Read from the sheet’s own text — exactly what you see in the sheet. If a row has no usable date in <b>Date</b>, the next date-like column is used.'
+        : '<span class="trend-warn">Read through Google’s query API</span> because the sheet’s text export was unavailable. That route turns dates typed as text into blanks, so counts can be low.'}</div>`;
+    if(P.undatedExamples && P.undatedExamples.length){
+      examplesHtml = `<div class="dc-h">Rows with no readable date — find them in the sheet by row number</div>
+        <div class="dc-scroll"><table class="dc-table"><thead><tr><th>Sheet row</th><th>Restaurant</th><th>City</th><th>Available?</th><th>Date cells</th></tr></thead><tbody>` +
+        P.undatedExamples.map(e => `<tr><td>${f(e.row)}</td><td style="font-family:'Inter',sans-serif;text-align:left;">${esc(e.name || '—')}</td><td style="text-align:left;">${esc(e.region || '—')}</td><td>${esc(e.avail || '—')}</td><td style="text-align:left;">${Object.entries(e.values || {}).map(([c, v]) => `<span class="dc-code">${esc(c)}</span> ${v ? esc(v) : '<i>empty</i>'}`).join('<br>')}</td></tr>`).join('') +
+        `</tbody></table></div>`;
+    }
+  }
   body.innerHTML = `
     <div class="dc-facts">
       <div class="dc-fact"><div class="l">Survey rows</div><div class="n">${f(D.rows)}</div></div>
@@ -2235,12 +2328,14 @@ function renderDateCheck(){
       <div class="dc-fact ${D.future ? 'bad' : ''}"><div class="l">Dated in the future</div><div class="n">${f(D.future)}</div></div>
     </div>
     <div>Dates run from <b>${esc(fd(D.earliest))}</b> to <b>${esc(fd(D.latest))}</b>. Numbers like 03/10/2026 are read ${D.order === 'MDY' ? 'month-first' : 'day-first'} (worked out from your data).</div>
+    ${sourcesHtml}
     <div class="dc-h">Rows by month (all visits · Available)</div>
     <div class="dc-scroll"><table class="dc-table"><thead><tr><th>Month</th><th>All visits</th><th>Available</th></tr></thead><tbody>${monthRows}${nod ? `<tr class="nodate"><td>No usable date</td><td>${f(nod)}</td><td>${f(TREND_QUALITY.undated)}</td></tr>` : ''}</tbody></table></div>
+    ${examplesHtml}
     <div class="dc-h">Busiest days — a large spike usually means rows were added or re-dated in bulk</div>
     <div class="dc-scroll"><table class="dc-table"><thead><tr><th>Date</th><th>All visits</th><th>Available</th></tr></thead><tbody>${busiest}</tbody></table></div>
     ${samples ? `<div class="dc-h">Date values that could not be understood</div><div class="dc-scroll"><table class="dc-table"><thead><tr><th>What the sheet contains</th><th>Rows</th></tr></thead><tbody>${samples}</tbody></table></div>` : ''}
-    <div class="dc-h">Columns found in Survey Data</div>
+    <div class="dc-h">Columns the dashboard reads</div>
     <div class="dc-cols">${D.columns.map(c => `<span class="dc-code">${esc(c)}</span>`).join('') || '—'}</div>
     ${dateLike.length > 1 ? `<div style="margin-top:6px;">Date-like columns: ${dateLike.map(c => `<span class="dc-code">${esc(c)}</span>`).join(' ')} — the chart uses <span class="dc-code">Date</span>.</div>` : ''}`;
   // open by default when a meaningful share of rows can't be placed on the calendar
@@ -2314,7 +2409,8 @@ function drawTrend(){
     qualEl.innerHTML = q.availTotal === 0 ? '' :
       (bad === 0 ? `All ${fmt(q.availTotal)} Available restaurants have a readable date.`
         : `<span class="trend-warn">${fmt(bad)} of ${fmt(q.availTotal)} Available restaurants are not charted</span> — ${fmt(q.undated)} have no readable date` +
-          (q.future ? `, ${fmt(q.future)} are dated in the future` : '') + '.');
+          (q.future ? `, ${fmt(q.future)} are dated in the future` : '') + '.') +
+      (q.noAnswer ? ` ${fmt(q.noAnswer)} visits have neither Yes nor No in “Res Available” — they count in Total only.` : '');
   }
   if(alertEl){
     const share = q.availTotal ? bad / q.availTotal : 0;
@@ -2326,9 +2422,9 @@ function drawTrend(){
   }
   renderDateCheck();
 
-  if(!TREND_ROWS.length){
+  if(!TREND_BUCKETS.length){
     kpiEl.innerHTML = ''; tableEl.innerHTML = ''; if(legendEl) legendEl.innerHTML = '';
-    chartEl.innerHTML = '<div class="stat-note" style="padding:14px;">No dated Available restaurants to chart yet.</div>';
+    chartEl.innerHTML = '<div class="stat-note" style="padding:14px;">No dated visits to chart yet.</div>';
     return;
   }
 
@@ -2336,18 +2432,21 @@ function drawTrend(){
   const dayKey = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const now = new Date();
   const todayT = dayKey(now);
-  const latestT = TREND_ROWS.reduce((m, r) => r.t > m ? r.t : m, 0);
-  const minT = TREND_ROWS.reduce((m, r) => r.t < m ? r.t : m, latestT);
+  const latestT = TREND_BUCKETS.reduce((m, r) => r.t > m ? r.t : m, 0);
+  const minT = TREND_BUCKETS.reduce((m, r) => r.t < m ? r.t : m, latestT);
   const latest = new Date(latestT);
   const todayInProgress = latestT === todayT;
   const ref = todayInProgress ? addDays(latest, -1) : latest;     // last COMPLETE day
   const chartW = chartEl.clientWidth || 640;
 
-  const rows = TREND_STATE.city === 'ALL' ? TREND_ROWS : TREND_ROWS.filter(r => r.city === TREND_STATE.city);
-  const day = new Map();
-  rows.forEach(r => day.set(r.t, (day.get(r.t) || 0) + 1));
-  const dayAt = d => day.get(dayKey(d)) || 0;
-  const rangeSum = (from, to) => { let n = 0; for(let d = from; d <= to; d = addDays(d, 1)) n += dayAt(d); return n; };
+  const rows = TREND_STATE.city === 'ALL' ? TREND_BUCKETS : TREND_BUCKETS.filter(r => r.city === TREND_STATE.city);
+  const day = new Map();                                  // day -> { all: every visit, yes: Available, no: Not available }
+  rows.forEach(r => { let o = day.get(r.t); if(!o){ o = { all:0, yes:0, no:0 }; day.set(r.t, o); } o.all += r.all; o.yes += r.yes; o.no += r.no; });
+  const NONE = { all:0, yes:0, no:0 };
+  const rec = d => day.get(dayKey(d)) || NONE;
+  const dayAt = d => rec(d).yes;                          // the chart, DoD, MoM and averages use Available restaurants
+  const rangeBy = (from, to, k) => { let n = 0; for(let d = from; d <= to; d = addDays(d, 1)) n += rec(d)[k]; return n; };
+  const rangeSum = (from, to) => rangeBy(from, to, 'yes');
   const avg7 = d => rangeSum(addDays(d, -6), d) / 7;
   const fDay = d => d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
   const fMon = d => d.toLocaleDateString('en-IN', { month:'short', year:'numeric' });
@@ -2371,8 +2470,8 @@ function drawTrend(){
   const mom = pctChange(mtd, pmSame);
   const cls = v => v === null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '';
   kpiEl.innerHTML = `
-    <div class="trend-kpi"><div class="l">${todayInProgress ? 'Yesterday' : 'Latest day'} · ${esc(fDay(ref))}</div><div class="n">${fmt(refN)}</div>
-      <div class="s">7-day avg ${fmt(Math.round(avg7(ref)))}/day${todayInProgress ? ` · today so far ${fmt(dayAt(latest))}` : ''}</div></div>
+    <div class="trend-kpi"><div class="l">${todayInProgress ? 'Yesterday' : 'Latest day'} · ${esc(fDay(ref))} · Available</div><div class="n">${fmt(refN)}</div>
+      <div class="s">of ${fmt(rec(ref).all)} visits · ${fmt(rec(ref).no)} not available · 7-day avg ${fmt(Math.round(avg7(ref)))}/day${todayInProgress ? ` · today so far ${fmt(rec(latest).yes)}` : ''}</div></div>
     <div class="trend-kpi"><div class="l">Day-over-day</div><div class="n ${cls(dod)}">${chgText(dod)}</div>
       <div class="s">${fmt(refN)} vs ${fmt(prevN)} on ${esc(fDay(addDays(ref, -1)))}</div></div>
     <div class="trend-kpi"><div class="l">Month to date · ${esc(fMon(ref))}</div><div class="n">${fmt(mtd)}</div>
@@ -2386,19 +2485,19 @@ function drawTrend(){
     // last 30 calendar days ending at the newest day in the data
     const items = [], tbl = [];
     for(let i = 29; i >= 0; i--){
-      const d = addDays(latest, -i), v = dayAt(d);
+      const d = addDays(latest, -i), v = dayAt(d), R = rec(d);
       const partial = todayInProgress && dayKey(d) === todayT;
       const dodV = partial ? null : pctChange(v, dayAt(addDays(d, -1)));
       const wowV = partial ? null : pctChange(v, dayAt(addDays(d, -7)));
       items.push({ v, partial, avg: partial ? null : avg7(d), label: d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }),
-        tip: `${fDay(d)}: ${v} Available restaurants${partial ? ' (today — still counting)' : ` · vs previous day ${chgText(dodV)} · vs same day last week ${chgText(wowV)}`}` });
-      tbl.push({ d, v, partial, dodV, wowV });
+        tip: `${fDay(d)}: ${R.all} visits · ${v} Available · ${R.no} not available${partial ? ' (today — still counting)' : ` · vs previous day ${chgText(dodV)} · vs same day last week ${chgText(wowV)}`}` });
+      tbl.push({ d, v, R, partial, dodV, wowV });
     }
     chartEl.innerHTML = trendChartSVG(items, chartW, true);
     if(legendEl) legendEl.innerHTML = `<span>${dot('#1E6B67')}Available restaurants per day</span><span><span class="trend-line-key"></span>7-day average</span>` +
       (todayInProgress ? `<span>${dot('#1E6B67', 'opacity:.38;')}Today — still counting</span>` : '');
-    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Date</th><th>Available</th><th>vs previous day</th><th class="opt">vs same day last week</th></tr></thead><tbody>` +
-      tbl.reverse().map(r => `<tr><td>${esc(fDay(r.d))}</td><td><b>${fmt(r.v)}</b></td>` +
+    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Date</th><th>Total visits</th><th>Available</th><th class="opt">Not available</th><th>Available vs previous day</th><th class="opt">vs same day last week</th></tr></thead><tbody>` +
+      tbl.reverse().map(r => `<tr><td>${esc(fDay(r.d))}</td><td>${fmt(r.R.all)}</td><td><b>${fmt(r.v)}</b></td><td class="opt">${fmt(r.R.no)}</td>` +
         (r.partial ? `<td colspan="1" style="color:var(--ink-soft);font-family:'Inter',sans-serif;">today so far</td><td class="opt"></td>`
                    : `<td>${chgPill(r.dodV)}</td><td class="opt">${chgPill(r.wowV)}</td>`) + `</tr>`).join('') +
       `</tbody></table>`;
@@ -2412,20 +2511,20 @@ function drawTrend(){
       const me = new Date(Math.floor(k / 12), k % 12 + 1, 0);
       const partial = k === curIdx && ref.getDate() < me.getDate();
       const to = partial ? ref : me;
-      const v = rangeSum(ms, to);
+      const v = rangeSum(ms, to), mAll = rangeBy(ms, to, 'all'), mNo = rangeBy(ms, to, 'no');
       const ps = new Date(ms.getFullYear(), ms.getMonth() - 1, 1);
       const pe = new Date(ms.getFullYear(), ms.getMonth(), 0);
       const pTo = partial ? (addDays(ps, ref.getDate() - 1) < pe ? addDays(ps, ref.getDate() - 1) : pe) : pe;
       const ch = pctChange(v, rangeSum(ps, pTo));
       const label = ms.toLocaleDateString('en-IN', { month:'short', year:'2-digit' }) + (partial ? '*' : '');
-      items.push({ v, partial, avg:null, label, tip: `${fMon(ms)}${partial ? ` (1–${ref.getDate()}, month in progress)` : ''}: ${v} Available restaurants · vs previous month ${chgText(ch)}` });
-      tbl.push({ ms, v, ch, partial });
+      items.push({ v, partial, avg:null, label, tip: `${fMon(ms)}${partial ? ` (1–${ref.getDate()}, month in progress)` : ''}: ${mAll} visits · ${v} Available · ${mNo} not available · vs previous month ${chgText(ch)}` });
+      tbl.push({ ms, v, mAll, mNo, ch, partial });
     }
     chartEl.innerHTML = trendChartSVG(items, chartW, false);
     if(legendEl) legendEl.innerHTML = `<span>${dot('#1E6B67')}Available restaurants per month</span>` +
       (items.some(i => i.partial) ? `<span>${dot('#1E6B67', 'opacity:.38;')}* Month in progress (complete days only)</span>` : '');
-    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Month</th><th>Available</th><th>vs previous month</th></tr></thead><tbody>` +
-      tbl.reverse().map(r => `<tr><td>${esc(fMon(r.ms))}${r.partial ? ` <span style="font-weight:400;color:var(--ink-soft);">(1–${ref.getDate()}, so far)</span>` : ''}</td><td><b>${fmt(r.v)}</b></td><td>${chgPill(r.ch)}</td></tr>`).join('') +
+    tableEl.innerHTML = `<table class="trend-table"><thead><tr><th>Month</th><th>Total visits</th><th>Available</th><th class="opt">Not available</th><th>Available vs previous month</th></tr></thead><tbody>` +
+      tbl.reverse().map(r => `<tr><td>${esc(fMon(r.ms))}${r.partial ? ` <span style="font-weight:400;color:var(--ink-soft);">(1–${ref.getDate()}, so far)</span>` : ''}</td><td>${fmt(r.mAll)}</td><td><b>${fmt(r.v)}</b></td><td class="opt">${fmt(r.mNo)}</td><td>${chgPill(r.ch)}</td></tr>`).join('') +
       `</tbody></table>`;
   }
 }
@@ -2497,6 +2596,7 @@ function fmtDrillDate(it){
 // Builds the opened restaurant list: chips (software counts) + table.
 // ctx = { items, title, showChips }; st holds drillSw (chip filter) and shown (rows on screen).
 function drillHTML(ctx, st){
+  ensureNames();                       // no-op unless names still need fetching
   const all = ctx.items;
   let chips = '';
   if(ctx.showChips){
@@ -2511,11 +2611,11 @@ function drillHTML(ctx, st){
       `</div>`;
   }
   const filtered = st.drillSw ? all.filter(it => chipKey(it) === st.drillSw) : all;
-  const sorted = filtered.slice().sort((a,b) => b.t - a.t);
+  const sorted = filtered.slice().sort((a,b) => (b.t - a.t) || ((b.r.__i || 0) - (a.r.__i || 0)));   // same day: later rows first
   const shown = sorted.slice(0, st.shown || DRILL_PAGE);
   const yn = v => { const x = (v||'').toString().trim().toLowerCase(); return x === 'yes' ? '<span class="drill-yes">Yes</span>' : x === 'no' ? '<span class="drill-no">No</span>' : '—'; };
   const rowsHtml = shown.map(it => `<tr>
-      <td class="nm">${esc(it.r['Res Name'] || '(no name recorded)')}</td>
+      <td class="nm">${esc(drillName(it.r))}</td>
       <td>${esc(it.raw || '—')}</td>
       <td>${yn(it.r['Zomato Live'])}</td>
       <td>${yn(it.r['Swiggy Live'])}</td>
@@ -2850,10 +2950,13 @@ function computeDataThrough(survey, rest){
   const today = new Date();
   today.setHours(23,59,59,999);
   let latest = null;
-  [...survey, ...rest].forEach(r => {
-    const d = parseDate(r['Date']);
-    if(d && d <= today && (!latest || d > latest)) latest = d;
-  });
+  const scan = rows => {
+    for(let i = 0; i < rows.length; i++){
+      const d = parseDate(rows[i]['Date']);
+      if(d && d <= today && (!latest || d > latest)) latest = d;
+    }
+  };
+  scan(survey); scan(rest);
   return latest;
 }
 
@@ -2865,7 +2968,9 @@ function renderDataThrough(survey, rest){
     el.style.display = 'none';
     return;
   }
-  const daysOld = Math.floor((Date.now() - latest.getTime()) / 86400000);
+  // whole calendar days between that survey day and today (not "24-hour periods", which flips at odd times of day)
+  const _n = new Date();
+  const daysOld = Math.round((new Date(_n.getFullYear(), _n.getMonth(), _n.getDate()) - new Date(latest.getFullYear(), latest.getMonth(), latest.getDate())) / 86400000);
   const dateStr = latest.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
   const staleNote = daysOld >= 3 ? ` <span style="opacity:.8;">(${daysOld}d ago)</span>` : '';
   el.className = 'data-through' + (daysOld >= 3 ? ' stale' : '');
@@ -2919,8 +3024,8 @@ function buildKpis(survey, rest){
   const totalSurvey = survey.length;
   const totalRest = rest.length;
 
-  const availYes = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='yes').length;
-  const availNo = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='no').length;
+  const availYes = survey.filter(r => isYes(r['Res Available'])).length;
+  const availNo = survey.filter(r => isNo(r['Res Available'])).length;
 
   // Total addressable market — a fixed reference figure (not derived from
   // survey activity, same note as the Outlet Matrix cards below), so people
@@ -3014,7 +3119,7 @@ function buildTicker(survey, rest){
   const items = [];
 
   // Overall leaders across all surveyed & available restaurants
-  const availableRows = survey.filter(r => (r['Res Available']||'').trim().toLowerCase() === 'yes');
+  const availableRows = survey.filter(r => isYes(r['Res Available']));
   const overallMap = countByExcludeBlank(availableRows, 'Ex Software');
   const overallTotal = Object.values(overallMap).reduce((a,b)=>a+b, 0);
   // All billing software names, most to least common — no cap
@@ -3051,11 +3156,11 @@ function buildTicker(survey, rest){
 function renderSurveySection(survey){
   document.getElementById('surveyCount').textContent = fmt(survey.length) + ' records';
 
-  const availYes = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='yes').length;
-  const availNo = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='no').length;
+  const availYes = survey.filter(r => isYes(r['Res Available'])).length;
+  const availNo = survey.filter(r => isNo(r['Res Available'])).length;
 
   // Zomato / Swiggy usage — percentage relative to Available, matching the KPI strip
-  const availRows = survey.filter(r => (r['Res Available']||'').trim().toLowerCase()==='yes');
+  const availRows = survey.filter(r => isYes(r['Res Available']));
   const zomatoYes = availRows.filter(r => (r['Zomato Live']||'').trim().toLowerCase()==='yes').length;
   const swiggyYes = availRows.filter(r => (r['Swiggy Live']||'').trim().toLowerCase()==='yes').length;
   renderPlatformOverview('platformOverviewSurvey', availYes, zomatoYes, swiggyYes);
@@ -3113,12 +3218,16 @@ function detectCompany(employeeName){
 }
 
 function populateCompanySelect(survey, rest){
-  const sel = document.getElementById('companySelect');
   const found = new Set();
   [...survey, ...rest].forEach(r => {
     const company = detectCompany(r['Employee Name']);
     if(company) found.add(company);
   });
+  populateCompanySelectFrom(found);
+}
+
+function populateCompanySelectFrom(found){
+  const sel = document.getElementById('companySelect');
   // Keep KNOWN_COMPANIES order rather than alphabetical, so newly added
   // partners appear in a predictable spot without needing to re-sort.
   const ordered = KNOWN_COMPANIES.filter(c => found.has(c));
@@ -3141,61 +3250,235 @@ function populateCompanySelect(survey, rest){
   };
 }
 
-async function loadAll(isManual){
-  const dot = document.getElementById('statusDot');
-  const text = document.getElementById('statusText');
-  const errBanner = document.getElementById('errBanner');
-  const brandMark = document.getElementById('brandMark');
-  dot.className = 'dot loading';
-  if(brandMark) brandMark.classList.add('refreshing');
-  text.textContent = isManual ? 'Refreshing…' : 'Loading data (the survey sheet is large, this can take up to a minute)…';
-  errBanner.style.display = 'none';
+// ---------------------------------------------------------------------------
+// FAST DATA PATH
+//
+// The server (api/dashboard-data.js) reads the Google Sheet once, keeps only the
+// columns this page uses, packs ~65,000 rows into a few hundred KB, and Vercel's CDN
+// serves that same small file to everyone. On top of that, this browser remembers the
+// last copy it received, so a repeat visit paints from memory immediately and then
+// quietly checks for newer data. If the fast feed is ever unavailable, the page falls
+// back to the older direct-from-Google loading, so it never goes blank.
+// ---------------------------------------------------------------------------
+const DATA_URL = '/api/dashboard-data';
+let LOADING = false, LOAD_SEQ = 0, FIRST_LOAD = true, LOADED_V = null, LAST_PAYLOAD = null, LAST_OK_AT = 0;
+let NAMES = null, NAMES_PROMISE = null, NAMES_FAILED = false, FORCE_FRESH = false;
+let STALE_RETRIES = 0;         // how many times we've re-checked after receiving an old copy
+let SHEET_COLUMNS = null;      // the sheet's column names, as reported by the server (null in direct mode)
 
+// base-36 digit values by character code (0-9, a-z)
+const B36 = new Uint8Array(128);
+for(let i = 0; i < 10; i++) B36[48 + i] = i;
+for(let i = 0; i < 26; i++){ B36[97 + i] = 10 + i; B36[65 + i] = 10 + i; }
+
+function decodePayload(p){
+  const n = p.n, W = p.w, C = p.cols, D = p.dict;
+  const unpack = k => {
+    const w = W[k], str = C[k], dict = D[k], out = new Array(n);
+    if(w === 1){ for(let i = 0; i < n; i++) out[i] = dict[B36[str.charCodeAt(i)]]; }
+    else if(w === 2){ for(let i = 0, p = 0; i < n; i++, p += 2) out[i] = dict[B36[str.charCodeAt(p)] * 36 + B36[str.charCodeAt(p + 1)]]; }
+    else { for(let i = 0; i < n; i++) out[i] = dict[parseInt(str.slice(i * w, i * w + w), 36)]; }
+    return out;
+  };
+  const region = unpack('region'), avail = unpack('avail'), zom = unpack('zom'), swg = unpack('swg'), sw = unpack('sw'), date = unpack('date');
+  const survey = new Array(n);
+  for(let i = 0; i < n; i++){
+    survey[i] = { 'Region': region[i], 'Res Available': avail[i], 'Zomato Live': zom[i], 'Swiggy Live': swg[i], 'Ex Software': sw[i], 'Date': date[i], __i: i };
+  }
+  const rest = p.rest.rows.map(row => { const o = {}; p.rest.cols.forEach((c, j) => { o[c] = row[j]; }); return o; });
+  return { survey, rest, companies: p.companies || [], dateOrder: p.dateOrder || 'DMY' };
+}
+
+// ---- remember the last copy in this browser (IndexedDB; silently skipped if unavailable)
+const IDB_NAME = 'surveyDashboard', IDB_STORE = 'snapshots';
+function idbOpen(){
+  return new Promise((resolve, reject) => {
+    if(typeof indexedDB === 'undefined') return reject(new Error('IndexedDB unavailable'));
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGet(key){
   try{
-    const [surveyRaw, restRaw] = await Promise.all([
-      fetchSheet('survey'),
-      fetchSheet('restaurant')
-    ]);
+    const db = await idbOpen();
+    return await new Promise((res, rej) => { const r = db.transaction(IDB_STORE).objectStore(IDB_STORE).get(key); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  }catch(e){ return undefined; }
+}
+async function idbSet(key, val){
+  try{
+    const db = await idbOpen();
+    await new Promise((res, rej) => { const tx = db.transaction(IDB_STORE, 'readwrite'); tx.objectStore(IDB_STORE).put(val, key); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+  }catch(e){ /* a full or blocked store must never break the dashboard */ }
+}
 
-    // populateCompanySelect needs to see the FULL company list, so always run
-    // it against the raw (unfiltered) data, before applying this view's filter.
-    if(COMPANY.toUpperCase() === 'ALL'){
-      populateCompanySelect(surveyRaw, restRaw);
+function fetchPayloadText(){
+  const early = window.__early && window.__early.company === COMPANY && !FORCE_FRESH ? window.__early.p : null;
+  window.__early = null;                       // the request started in <head> is used once
+  if(early) return early;
+  const bust = FORCE_FRESH ? '&_=' + Date.now() : '';
+  return fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}${bust}`).then(r => r.ok ? r.text() : Promise.reject(new Error('Fast feed HTTP ' + r.status)));
+}
+
+// ---- restaurant names: only needed for the drill-down lists, so they load separately
+function restaurantNamesReady(){ return !LAST_PAYLOAD || NAMES !== null; }
+function drillName(r){
+  if(r['Res Name'] !== undefined) return r['Res Name'] || '(no name recorded)';   // slower fallback path carries names itself
+  if(NAMES && r.__i !== undefined) return NAMES[r.__i] || '(no name recorded)';
+  return NAMES_FAILED ? '(name unavailable)' : 'loading…';
+}
+function refreshOpenDrills(){ (window.CITY_SYNC_TARGETS || []).forEach(t => { try{ t.render(t.sel.value); }catch(e){} }); }
+function ensureNames(){
+  if(!LAST_PAYLOAD || NAMES !== null || NAMES_FAILED) return Promise.resolve();
+  if(NAMES_PROMISE) return NAMES_PROMISE;
+  const { v, names } = LAST_PAYLOAD;
+  const part = k => fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}&names=1&part=${k}&v=${v}`)
+    .then(r => r.status === 409 ? Promise.reject(new Error('stale')) : r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+  NAMES_PROMISE = Promise.all(Array.from({ length: names.parts }, (_, k) => part(k))).then(chunks => {
+    if(!LAST_PAYLOAD || LAST_PAYLOAD.v !== v) return;       // newer data arrived meanwhile — names no longer line up
+    const all = []; chunks.forEach(c => c.names.forEach(nm => all.push(nm)));
+    NAMES = all;
+  }).catch(err => {
+    NAMES_FAILED = true;
+    if(err && err.message === 'stale'){ FORCE_FRESH = true; NAMES_FAILED = false; setTimeout(() => loadAll(true), 0); }   // server has newer data: refresh once
+  }).then(() => { NAMES_PROMISE = null; refreshOpenDrills(); });
+  return NAMES_PROMISE;
+}
+function prefetchNamesWhenIdle(){
+  const c = navigator.connection;
+  if(c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''))) return;     // don't spend a slow/metered connection on names nobody asked for
+  const go = () => ensureNames();
+  (window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 4000 }) : setTimeout(go, 2500));
+}
+
+const _tick = () => new Promise(r => setTimeout(r, 0));
+
+// Paint the page in stages so the top of the dashboard appears first, while the
+// heavier sections are still being worked out underneath.
+async function renderAll(survey, rest){
+  buildKpis(survey, rest);
+  renderDataThrough(survey, rest);
+  buildTicker(survey, rest);
+  renderOutletMatrix(survey, rest);
+  await _tick();
+  renderCompetitive(survey);
+  renderSurveySection(survey);
+  renderRestaurantSection(rest);
+  await _tick();
+  renderQuickAccess(survey);
+  await _tick();
+  renderTrend(survey);
+}
+
+function setStatus(kind, msg){
+  const dot = document.getElementById('statusDot'), text = document.getElementById('statusText'), brand = document.getElementById('brandMark');
+  dot.className = kind === 'err' ? 'dot err' : kind === 'loading' ? 'dot loading' : 'dot';
+  if(brand) brand.classList.toggle('refreshing', kind === 'loading');
+  text.textContent = msg;
+}
+const fmtClock = t => new Date(t).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+
+// The older way: read the whole sheet directly from Google. Slower, but it needs nothing
+// from the server, so it is the safety net if the fast feed can't be used.
+async function loadDirect(){
+  setStatus('loading', 'Loading (direct mode — this can take a little longer)…');
+  const [surveyRaw, restRaw] = await Promise.all([ fetchSheet('survey'), fetchSheet('restaurant') ]);
+  if(COMPANY.toUpperCase() === 'ALL') populateCompanySelect(surveyRaw, restRaw);
+  const survey = filterByCompany(surveyRaw), rest = filterByCompany(restRaw);
+  if(!survey.length && !rest.length){
+    throw new Error('No rows matched — check the company name matches what appears in Employee Name, or use company=ALL.');
+  }
+  LAST_PAYLOAD = null; LOADED_V = null; NAMES = null; SHEET_COLUMNS = null;
+  detectDateOrder(survey);
+  await renderAll(survey, rest);
+  LAST_OK_AT = Date.now();
+  setStatus('ok', 'Live');
+  document.getElementById('lastUpdated').textContent = 'Last updated ' + new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+async function loadAll(isManual){
+  // Automatic refreshes never pile up on a load that is still running; an explicit refresh always
+  // goes ahead and supersedes any older one (whose late result is then ignored).
+  if(LOADING && !isManual) return;
+  const seq = ++LOAD_SEQ;
+  LOADING = true;
+  const errBanner = document.getElementById('errBanner');
+  try{
+    errBanner.style.display = 'none';
+    setStatus('loading', FIRST_LOAD ? 'Loading…' : 'Refreshing…');
+
+    // 1) start the network request straight away
+    const netP = fetchPayloadText();
+    netP.catch(() => {});
+
+    // 2) meanwhile, paint the copy saved by the last visit (if there is one)
+    let shownFromCache = false;
+    if(FIRST_LOAD && !isManual){
+      const cached = await idbGet('data:' + COMPANY);
+      if(cached && cached.text){
+        try{
+          const p = JSON.parse(cached.text), d = decodePayload(p);
+          setDateOrder(d.dateOrder);
+          if(COMPANY.toUpperCase() === 'ALL') populateCompanySelectFrom(new Set(d.companies));
+          LAST_PAYLOAD = p; LOADED_V = p.v; SHEET_COLUMNS = p.sheetColumns || null;
+          await renderAll(d.survey, d.rest);
+          shownFromCache = true;
+          setStatus('loading', 'Showing saved data from ' + fmtClock(p.generatedAt) + ' — checking for updates…');
+        }catch(e){ shownFromCache = false; LOADED_V = null; LAST_PAYLOAD = null; }
+      }
+    }
+    FIRST_LOAD = false;
+
+    // 3) the fresh copy — only a failed DOWNLOAD may trigger the fallbacks below
+    let text = null, p = null;
+    try{ text = await netP; p = JSON.parse(text); }catch(fastErr){ p = null; }
+    if(seq !== LOAD_SEQ) return;                            // a newer load took over
+
+    if(!p){
+      if(shownFromCache){
+        setStatus('err', 'Offline — showing saved data');
+        document.getElementById('lastUpdated').textContent = 'Showing saved data from ' + fmtClock(LAST_PAYLOAD.generatedAt);
+        return;
+      }
+      await loadDirect();
+      return;
     }
 
-    const survey = filterByCompany(surveyRaw);
-    const rest = filterByCompany(restRaw);
-
-    if(!survey.length && !rest.length){
-      throw new Error('No rows matched — check the company name matches what appears in Employee Name, or use company=ALL.');
+    if(p.v !== LOADED_V){                                   // identical version = nothing to redraw
+      const d = decodePayload(p);
+      if(!d.survey.length && !d.rest.length){
+        throw new Error('No rows matched — check the company name matches what appears in Employee Name, or use company=ALL.');
+      }
+      setDateOrder(d.dateOrder);
+      if(COMPANY.toUpperCase() === 'ALL') populateCompanySelectFrom(new Set(d.companies));
+      if(LAST_PAYLOAD && LAST_PAYLOAD.v !== p.v){ NAMES = null; NAMES_PROMISE = null; NAMES_FAILED = false; }
+      LAST_PAYLOAD = p; LOADED_V = p.v; SHEET_COLUMNS = p.sheetColumns || null;
+      await renderAll(d.survey, d.rest);
+      idbSet('data:' + COMPANY, { text, savedAt: Date.now() });
     }
+    FORCE_FRESH = false;
+    LAST_OK_AT = Date.now();
+    setStatus('ok', 'Live');
+    document.getElementById('lastUpdated').textContent = 'Data as of ' + fmtClock(p.generatedAt);
+    prefetchNamesWhenIdle();
 
-    detectDateOrder(survey);
-    buildKpis(survey, rest);
-    buildTicker(survey, rest);
-    renderDataThrough(survey, rest);
-    renderOutletMatrix(survey, rest);
-    renderCompetitive(survey);
-    renderSurveySection(survey);
-    renderRestaurantSection(rest);
-
-    renderQuickAccess(survey);
-    renderTrend(survey);
-
-    dot.className = 'dot';
-    if(brandMark) brandMark.classList.remove('refreshing');
-    text.textContent = 'Live';
-    document.getElementById('lastUpdated').textContent =
-      'Last updated ' + new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
+    // The CDN can hand out a copy that is a few minutes old (and, after a quiet spell, older still while it
+    // refreshes itself in the background). If so, quietly check again shortly — at most three times.
+    const ageMs = Date.now() - new Date(p.generatedAt).getTime();
+    if(ageMs > 6 * 60 * 1000 && STALE_RETRIES < 3){
+      const delays = window.__retryDelays || [8000, 15000, 30000];
+      document.getElementById('lastUpdated').textContent = 'Data as of ' + fmtClock(p.generatedAt) + ' — checking for newer…';
+      setTimeout(() => loadAll(true), delays[STALE_RETRIES++]);
+    } else if(ageMs <= 6 * 60 * 1000){ STALE_RETRIES = 0; }
   } catch(err){
-    dot.className = 'dot err';
-    if(brandMark) brandMark.classList.remove('refreshing');
-    text.textContent = 'Connection issue';
+    setStatus('err', 'Connection issue');
     errBanner.style.display = 'block';
     errBanner.innerHTML = `Couldn't load data (${esc(err.message || 'network error')}). ` +
       `Please check your internet connection. It will retry automatically on the next auto-refresh.`;
     console.error(err);
+  } finally {
+    if(seq === LOAD_SEQ) LOADING = false;
   }
 }
 
@@ -3261,7 +3544,10 @@ document.querySelectorAll('.qa-tab').forEach(btn => {
 });
 
 loadAll(false);
-setInterval(() => loadAll(false), REFRESH_MS);
+setInterval(() => { if(!document.hidden) loadAll(false); }, REFRESH_MS);
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && LAST_OK_AT && Date.now() - LAST_OK_AT > REFRESH_MS) loadAll(false);
+});
 </script>
 </body>
 </html>
