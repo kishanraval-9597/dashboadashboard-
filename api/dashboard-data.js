@@ -381,8 +381,12 @@ async function loadSnapshot(company){
         const rows = tableToObjects(g.table, SURVEY_COLS); rows.forEach((o, i) => { o.__row = i + 2; });
         return { rows, labels: g.labels, kind: 'gviz' };
       });
-    const [s, r] = await Promise.all([ surveyP, fetchTable(GIDS.restaurant, REST_COLS) ]);
-    return buildSnapshot(s.rows, tableToObjects(r.table, REST_COLS), company, s.labels, { kind: s.kind });
+    const t0 = Date.now();
+    const timed = p => p.then(x => { x._ms = Date.now() - t0; return x; });
+    const [s, r] = await Promise.all([ timed(surveyP), fetchTable(GIDS.restaurant, REST_COLS) ]);
+    const snap = buildSnapshot(s.rows, tableToObjects(r.table, REST_COLS), company, s.labels, { kind: s.kind });
+    snap.payload.timing = { surveyMs: s._ms, totalMs: Date.now() - t0 };
+    return snap;
   })();
   SNAPSHOTS.set(key, { at: Date.now(), promise });
   promise.catch(() => { if(SNAPSHOTS.get(key) && SNAPSHOTS.get(key).promise === promise) SNAPSHOTS.delete(key); });
@@ -418,7 +422,10 @@ async function handler(req, res){
       res.status(413).json({ error: 'dataset too large for the fast feed' });
       return;
     }
-    res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=300, stale-while-revalidate=86400');
+    // max-age=0: the BROWSER always asks again (a cheap 304 when nothing changed). The CDN shares one copy for
+    // 2 minutes and may serve it up to 15 more while it refreshes in the background; beyond that a failing
+    // refresh shows up as an error instead of the dashboard silently showing days-old data.
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120, stale-while-revalidate=900');
     res.setHeader('ETag', `"${snap.v}"`);
     if(req.headers && req.headers['if-none-match'] === `"${snap.v}"`){ res.status(304).end(); return; }
     res.status(200).send(text);
