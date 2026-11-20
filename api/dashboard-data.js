@@ -480,7 +480,9 @@ function buildSnapshot(surveyRows, restRows, company, sheetLabels, opts){
     dict: Object.fromEntries(Object.keys(D).map(k => [k, D[k].arr])),
     w: Object.fromEntries(Object.keys(D).map(k => [k, packed[k].w])),
     cols: Object.fromEntries(Object.keys(D).map(k => [k, packed[k].s])),
-    names: { chunk: NAMES_CHUNK, parts: Math.ceil(survey.length / NAMES_CHUNK) },
+    // a short fingerprint of every chunk of names: the browser keeps chunks it already has and only fetches those that changed
+    names: { chunk: NAMES_CHUNK, parts: Math.ceil(survey.length / NAMES_CHUNK),
+      hashes: Array.from({ length: Math.ceil(survey.length / NAMES_CHUNK) }, (_, k) => crypto.createHash('sha1').update(names.slice(k * NAMES_CHUNK, (k + 1) * NAMES_CHUNK).join('\n')).digest('hex').slice(0, 12)) },
     dateColumns: dateCols,                       // which columns can supply a date, best first
     dateSources: sources,                        // how many rows each one supplied
     dateUnresolved: unresolved,                  // rows where none could be read
