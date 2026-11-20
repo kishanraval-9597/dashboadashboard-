@@ -19,6 +19,10 @@
 // column (Date, Timestamp, Visit Date, ...) is considered, and each row uses the first one
 // that can be read — the dashboard reports which column supplied how many rows.
 //
+// TABS: tabs are found by NAME ("Survey Data", "New Restaurant") as well as by their numeric id, and every
+// result is checked ("does this look like the survey tab, and does it have rows?"). An empty or wrong tab is
+// reported as an error — it is never passed on as a successful "0 surveys" result.
+//
 // If this endpoint is ever unavailable, the dashboard automatically falls back to the
 // older (slower) direct-from-Google loading, so it never goes blank.
 
@@ -33,6 +37,18 @@ const SURVEY_COLS = ['Date', 'Employee Name', 'Res Available', 'Swiggy Live', 'Z
 const REST_COLS   = ['Date', 'Employee Name', 'Live On Swiggy', 'Live On Zomato', 'Existing Software Final', 'Outlet Type', 'City', 'State'];
 
 const KNOWN_COMPANIES = ['Petpooja', 'PAMAC', 'WPP'];   // keep in step with the dashboard
+const TAB_NAMES = { survey: ['Survey Data'], restaurant: ['New Restaurant Data', 'New Restaurant'] };
+const SURVEY_REQUIRED = ['Res Available', 'Region', 'Ex Software', 'Date'];           // a real survey tab has (nearly) all of these
+const REST_REQUIRED = ['City', 'Existing Software Final', 'Live On Zomato', 'Live On Swiggy'];
+// Column headers are matched ignoring capitals and extra spaces, plus a few harmless alternative names
+// (used only when the sheet has no column with the proper name).
+const ALIASES = {
+  'res avail': 'Res Available', 'res availability': 'Res Available', 'restaurant available': 'Res Available', 'restaurant availability': 'Res Available',
+  'swiggy': 'Swiggy Live', 'zomato': 'Zomato Live',
+  'existing software': 'Ex Software', 'ex-software': 'Ex Software', 'existing billing software': 'Ex Software',
+  'city': 'Region',
+  'restaurant name': 'Res Name', 'employee': 'Employee Name', 'surveyor name': 'Employee Name',
+};
 const NAMES_CHUNK = 40000;                              // restaurant names per response
 const SNAPSHOT_TTL_MS = 60 * 1000;                      // reuse a freshly built snapshot on a warm instance
 const MAX_PAYLOAD_CHARS = 4200000;                      // Vercel limits a function response to ~4.5 MB
@@ -49,10 +65,43 @@ function isoFromGvizDate(raw){
   return m[4] === undefined ? datePart : `${datePart} ${pad2(m[4])}:${pad2(m[5] || '0')}`;
 }
 
-async function gviz(gid, query){
-  let url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${gid}&headers=1&tqx=out:json`;
+const normLabel = x => String(x == null ? '' : x).toLowerCase().replace(/\s+/g, ' ').trim();
+
+// Canonical header names: "res available ", "RES AVAILABLE" -> "Res Available"; known alternative names are used
+// only when the proper column is absent. Duplicate columns keep their own names.
+function canonLabels(rawLabels, canonList, aliases){
+  const exact = new Map(canonList.map(c => [normLabel(c), c]));
+  const present = new Set();
+  rawLabels.forEach(l => { const c = exact.get(normLabel(l)); if(c) present.add(c); });
+  const seen = new Set();
+  return rawLabels.map(l => {
+    const raw = String(l == null ? '' : l).trim();
+    let c = exact.get(normLabel(l));
+    if(!c && aliases){ const a = aliases[normLabel(l)]; if(a && canonList.includes(a) && !present.has(a)) c = a; }
+    if(c && !seen.has(c)){ seen.add(c); present.add(c); return c; }
+    return raw;
+  });
+}
+
+async function fetchTimeout(url, ms){
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), ms);
+  try{ return await fetch(url, { signal: ac.signal }); }
+  catch(e){ if(e && e.name === 'AbortError') throw new Error('timed out after ' + Math.round(ms / 1000) + ' s'); throw e; }
+  finally { clearTimeout(timer); }
+}
+
+// target: a tab id ("0") or { gid } or { sheet: 'Tab name' }
+function gvizUrl(target, query){
+  const t = (target && typeof target === 'object') ? target : { gid: target };
+  const which = t.sheet ? 'sheet=' + encodeURIComponent(t.sheet) : 'gid=' + encodeURIComponent(t.gid);
+  let url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?${which}&headers=1&tqx=out:json`;
   if(query) url += '&tq=' + encodeURIComponent(query);
-  const res = await fetch(url);
+  return url;
+}
+
+async function gviz(target, query){
+  const res = await fetchTimeout(gvizUrl(target, query), 40000);
   if(!res.ok) throw new Error('Could not reach the sheet (HTTP ' + res.status + ')');
   const text = await res.text();
   const a = text.indexOf('('), b = text.lastIndexOf(')');
@@ -67,24 +116,55 @@ async function gviz(gid, query){
 
 // Ask Google for ONLY the columns we use (a fraction of the sheet's width). If that
 // optimisation fails for any reason, fall back to downloading the whole tab.
-async function fetchTable(gid, wanted){
-  const labelsOf = t => t.cols.map(c => (c.label || c.id || '').trim());
+async function fetchTable(target, wanted, aliases){
+  const labelsOf = t => canonLabels(t.cols.map(c => (c.label || c.id || '').trim()), wanted, aliases);
   try{
-    const head = await gviz(gid, 'select * limit 1');
+    const head = await gviz(target, 'select * limit 1');
+    const canon = labelsOf(head);
     const idByLabel = {};
-    head.cols.forEach(c => { const label = (c.label || c.id || '').trim(); if(label && !(label in idByLabel)) idByLabel[label] = c.id; });
-    const extra = head.cols.map(c => (c.label || c.id || '').trim()).filter(l => isDateLike(l) && !wanted.includes(l));
-    const ids = wanted.concat(wanted === SURVEY_COLS ? extra : []).map(l => idByLabel[l]).filter(Boolean);
-    if(ids.length && ids.length < head.cols.length) return { table: await gviz(gid, 'select ' + ids.join(',')), labels: labelsOf(head) };
+    head.cols.forEach((c, i) => { const l = canon[i]; if(l && !(l in idByLabel)) idByLabel[l] = c.id; });
+    const extra = wanted === SURVEY_COLS ? canon.filter(l => isDateLike(l) && !wanted.includes(l)) : [];
+    const ids = wanted.concat(extra).map(l => idByLabel[l]).filter(Boolean);
+    if(ids.length && ids.length < head.cols.length) return { table: await gviz(target, 'select ' + ids.join(',')), labels: canon };
   }catch(e){ /* fall through to the plain download */ }
-  const table = await gviz(gid, null);
+  const table = await gviz(target, null);
   return { table, labels: labelsOf(table) };
 }
 
-function tableToObjects(table, keep){
+// ---- find tabs by NAME (so a re-created tab with a new id is still found)
+let TABS_CACHE = null;
+const decodeEntities = t => t.replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+async function discoverTabs(){
+  if(TABS_CACHE && Date.now() - TABS_CACHE.at < 10 * 60 * 1000) return TABS_CACHE;
+  const tabs = [];                                   // [{ name, gid }]
+  let note = '';
+  try{
+    const res = await fetchTimeout(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/htmlview`, 8000);
+    if(!res.ok) note = 'tab list page answered HTTP ' + res.status;
+    else {
+      const html = await res.text();
+      const re = /sheet-button-(\d+)/g; let m; const seen = new Set();
+      while((m = re.exec(html))){
+        if(seen.has(m[1])) continue;
+        const gt = html.indexOf('>', m.index); if(gt === -1) continue;
+        const rawText = html.slice(gt + 1, gt + 700).replace(/<[^>]*>/g, '\n').split('\n').filter(x => x.trim())[0];
+        if(rawText){ seen.add(m[1]); tabs.push({ name: decodeEntities(rawText.trim()), exact: decodeEntities(rawText), gid: m[1] }); }
+      }
+      if(!tabs.length) note = 'the tab list could not be read from the sheet page';
+    }
+  }catch(e){ note = e.message; }
+  TABS_CACHE = { at: Date.now(), tabs, note };
+  return TABS_CACHE;
+}
+// Names to try when asking Google for a tab BY NAME: the exact name it reported, the configured name, and the same with a
+// trailing space (tab names such as "Survey Data " often carry one).
+const nameVariants = (found, configured) => Array.from(new Set([found && found.exact, found && found.name].concat(configured.reduce((a, n) => a.concat([n, n + ' ']), [])).filter(Boolean)));
+const findTab = (tabs, names) => { for(const n of names){ const t = tabs.find(x => normLabel(x.name) === normLabel(n)); if(t) return t; } return null; };
+
+function tableToObjects(table, keep, aliases){
   const keepSet = new Set(keep);
   const dateLikeKeep = l => keepSet.has(l) || (keep === SURVEY_COLS && isDateLike(l));
-  const cols = table.cols.map(c => (c.label || c.id || '').trim());
+  const cols = canonLabels(table.cols.map(c => (c.label || c.id || '').trim()), keep, aliases);
   return (table.rows || []).map(row => {
     const obj = {};
     (row.c || []).forEach((cell, i) => {
@@ -147,7 +227,7 @@ function parseCsv(text, wanted){
 function csvToRows(text){
   const bom = text.charCodeAt(0) === 0xFEFF ? 1 : 0;
   let nl = text.indexOf('\n', bom); if(nl === -1) nl = text.length;
-  const labels = parseCsv(text.slice(bom, nl).replace(/\r$/, ''), null)[0].map(s => (s || '').trim());
+  const labels = canonLabels(parseCsv(text.slice(bom, nl).replace(/\r$/, ''), null)[0].map(s => (s || '').trim()), SURVEY_COLS, ALIASES);
   const seen = new Set(), wanted = labels.map(l => { if(!l || seen.has(l) || !(SURVEY_COLS.includes(l) || isDateLike(l))) return false; seen.add(l); return true; });
   const arrs = parseCsv(text.slice(nl + 1), wanted);
   const idx = []; labels.forEach((l, c) => { if(wanted[c]) idx.push([l, c]); });
@@ -160,15 +240,65 @@ function csvToRows(text){
   return { rows, labels };
 }
 
-async function fetchSurveyCsv(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GIDS.survey}`;
-  const res = await fetch(url);
+async function fetchSurveyCsv(gid){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${encodeURIComponent(gid)}`;
+  const res = await fetchTimeout(url, 45000);
   if(!res.ok) throw new Error('CSV export HTTP ' + res.status);
   const text = await res.text();
   if(/^\s*</.test(text.slice(0, 300))) throw new Error('CSV export returned a web page instead of data');
-  const out = csvToRows(text);
-  if(!out.rows.length || !out.labels.includes('Date') && !out.labels.some(isDateLike)) throw new Error('CSV export had no usable rows or date column');
-  return out;
+  return csvToRows(text);
+}
+
+// ----------------------------------------------------------------------------- reading the two tabs (with checks)
+const missingOf = (labels, required) => required.filter(c => !labels.includes(c));
+const looksLike = (labels, required, min) => required.length - missingOf(labels, required).length >= min;
+const short = e => String(e && e.message || e).slice(0, 140);
+
+// Try, in order: the tab found by NAME (CSV, then query API), the configured tab id (CSV, then query API), and
+// finally the query API by tab name. The first result that has rows AND the survey columns wins.
+async function readSurvey(tabs, attempts){
+  const found = findTab(tabs, TAB_NAMES.survey);
+  const gids = []; [found && found.gid, GIDS.survey].forEach(g => { if(g !== undefined && g !== null && !gids.includes(String(g))) gids.push(String(g)); });
+  const steps = [];
+  gids.forEach(g => { steps.push({ via: 'csv', gid: g }); steps.push({ via: 'gviz', gid: g }); });
+  nameVariants(found, TAB_NAMES.survey).forEach(n => steps.push({ via: 'gviz', sheet: n }));
+  for(const st of steps){
+    const a = { via: st.via, tab: st.sheet ? 'name “' + st.sheet + '”' : 'id ' + st.gid, ok: false, rows: 0, ms: 0, error: '' };
+    attempts.push(a); const t0 = Date.now();
+    try{
+      let r;
+      if(st.via === 'csv') r = await fetchSurveyCsv(st.gid);
+      else { const g = await fetchTable(st.sheet ? { sheet: st.sheet } : st.gid, SURVEY_COLS, ALIASES); const rows = tableToObjects(g.table, SURVEY_COLS, ALIASES); rows.forEach((o, i) => { o.__row = i + 2; }); r = { rows, labels: g.labels }; }
+      a.rows = r.rows.length; a.ms = Date.now() - t0;
+      if(!r.rows.length){ a.error = 'the tab has no rows'; continue; }
+      if(!looksLike(r.labels, SURVEY_REQUIRED, 3)){ a.error = 'columns do not look like the survey tab (found: ' + r.labels.slice(0, 8).join(', ') + ')'; continue; }
+      a.ok = true;
+      return { rows: r.rows, labels: r.labels, kind: st.via === 'csv' ? 'csv' : 'gviz', tab: found && !st.sheet && String(found.gid) === st.gid ? found.name : (st.sheet || null), gid: st.gid || null };
+    }catch(e){ a.error = short(e); a.ms = Date.now() - t0; }
+  }
+  const err = new Error('The “Survey Data” tab could not be read — every attempt failed or returned no survey rows. ' +
+    attempts.filter(a => !a.ok).slice(0, 6).map(a => `${a.via} (${a.tab}): ${a.error}`).join('; '));
+  err.attempts = attempts; throw err;
+}
+
+// The restaurant-leads tab is smaller and never blocks the survey numbers: if it cannot be read the dashboard says so.
+async function readLeads(tabs, attempts){
+  const found = findTab(tabs, TAB_NAMES.restaurant);
+  const gids = []; [found && found.gid, GIDS.restaurant].forEach(g => { if(g !== undefined && g !== null && !gids.includes(String(g))) gids.push(String(g)); });
+  const steps = gids.map(g => ({ gid: g })).concat(nameVariants(found, TAB_NAMES.restaurant).map(n => ({ sheet: n })));
+  for(const st of steps){
+    const a = { via: 'gviz', tab: st.sheet ? 'name “' + st.sheet + '”' : 'id ' + st.gid, ok: false, rows: 0, ms: 0, error: '' };
+    attempts.push(a); const t0 = Date.now();
+    try{
+      const g = await fetchTable(st.sheet ? { sheet: st.sheet } : st.gid, REST_COLS);
+      const rows = tableToObjects(g.table, REST_COLS);
+      a.rows = rows.length; a.ms = Date.now() - t0;
+      if(!looksLike(g.labels, REST_REQUIRED, 2)){ a.error = 'columns do not look like the restaurant-leads tab'; continue; }
+      a.ok = true;
+      return { rows, labels: g.labels, tab: st.sheet || (found && String(found.gid) === st.gid ? found.name : null), gid: st.gid || null };
+    }catch(e){ a.error = short(e); a.ms = Date.now() - t0; }
+  }
+  return { rows: [], labels: [], failed: true, error: Array.from(new Set(attempts.filter(a => !a.ok).map(a => a.error))).slice(0, 2).join('; ') };
 }
 
 // ----------------------------------------------------------------------------- dates
@@ -369,23 +499,32 @@ function buildSnapshot(surveyRows, restRows, company, sheetLabels, opts){
 // ----------------------------------------------------------------------------- the handler
 const SNAPSHOTS = new Map();   // company -> { at, promise }   (reused only on a warm instance)
 
-async function loadSnapshot(company){
+async function loadSnapshot(company, opts){
   const key = (company || 'ALL').toString().trim().toLowerCase();
   const hit = SNAPSHOTS.get(key);
-  if(hit && Date.now() - hit.at < SNAPSHOT_TTL_MS) return hit.promise;
+  if(!(opts && opts.fresh) && hit && Date.now() - hit.at < SNAPSHOT_TTL_MS) return hit.promise;
   const promise = (async () => {
-    // Survey tab: the sheet's own text (CSV) first; Google's query API only if that is unavailable.
-    const surveyP = fetchSurveyCsv().then(c => ({ rows: c.rows, labels: c.labels, kind: 'csv' }))
-      .catch(async () => {
-        const g = await fetchTable(GIDS.survey, SURVEY_COLS);
-        const rows = tableToObjects(g.table, SURVEY_COLS); rows.forEach((o, i) => { o.__row = i + 2; });
-        return { rows, labels: g.labels, kind: 'gviz' };
-      });
     const t0 = Date.now();
+    const tabInfo = await discoverTabs();
+    const sAttempts = [], rAttempts = [];
     const timed = p => p.then(x => { x._ms = Date.now() - t0; return x; });
-    const [s, r] = await Promise.all([ timed(surveyP), fetchTable(GIDS.restaurant, REST_COLS) ]);
-    const snap = buildSnapshot(s.rows, tableToObjects(r.table, REST_COLS), company, s.labels, { kind: s.kind });
+    let s, r;
+    try{ [s, r] = await Promise.all([ timed(readSurvey(tabInfo.tabs, sAttempts)), readLeads(tabInfo.tabs, rAttempts) ]); }
+    catch(e){ e.attempts = { survey: sAttempts, restaurant: rAttempts }; e.tabs = tabInfo.tabs; e.tabsNote = tabInfo.note; throw e; }
+    const snap = buildSnapshot(s.rows, r.rows, company, s.labels, { kind: s.kind });
     snap.payload.timing = { surveyMs: s._ms, totalMs: Date.now() - t0 };
+    // what was read from where (shown in the dashboard's "Data service details")
+    snap.payload.sources = {
+      survey: { tab: s.tab || null, id: s.gid || null, via: s.kind, rows: s.rows.length },
+      restaurant: r.failed ? { failed: true } : { tab: r.tab || null, id: r.gid || null, rows: r.rows.length },
+    };
+    const warnings = [];
+    if(r.failed) warnings.push('The restaurant-leads tab (“New Restaurant”) could not be read, so New Leads show as 0. ' + (r.error || ''));
+    const miss = missingOf(s.labels, SURVEY_REQUIRED);
+    snap.payload.missingColumns = miss;
+    if(miss.length) warnings.push('The survey tab has no column named ' + miss.map(c => '“' + c + '”').join(', ') + ', so numbers that depend on it will be missing or zero.');
+    snap.payload.warnings = warnings;
+    snap.attempts = { survey: sAttempts, restaurant: rAttempts }; snap.tabs = tabInfo.tabs; snap.tabsNote = tabInfo.note;
     return snap;
   })();
   SNAPSHOTS.set(key, { at: Date.now(), promise });
@@ -399,6 +538,21 @@ async function handler(req, res){
   try{
     const q = req.query || {};
     const company = (q.company || 'ALL').toString().trim() || 'ALL';
+
+    // ---- ?debug=1 : a plain report of what was tried and what came back (counts and names only — no survey data)
+    if(q.debug){
+      const out = { ok: false };
+      try{
+        const snap = await loadSnapshot(company, { fresh: true });
+        Object.assign(out, { ok: true, rows: snap.payload.n, readAs: snap.payload.readAs, sources: snap.payload.sources, warnings: snap.payload.warnings,
+          missingColumns: snap.payload.missingColumns, timing: snap.payload.timing, dateSources: snap.payload.dateSources, dateUnresolved: snap.payload.dateUnresolved,
+          attempts: snap.attempts, tabsFound: snap.tabs, tabListNote: snap.tabsNote || '' });
+      }catch(e){ Object.assign(out, { error: e.message, attempts: e.attempts || null, tabsFound: e.tabs || null, tabListNote: e.tabsNote || '' }); }
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json(out);
+      return;
+    }
+
     const snap = await loadSnapshot(company);
 
     // ---- restaurant names, pinned to one data version (so they can never be mismatched)
@@ -436,4 +590,4 @@ async function handler(req, res){
 }
 
 module.exports = handler;
-module.exports._internals = { parseDate, detectDateOrder, pickDateColumns, buildSnapshot, tableToObjects, fetchTable, isoFromGvizDate, pack, parseCsv, csvToRows, fetchSurveyCsv, isDateLike, NAMES_CHUNK, SNAPSHOTS };
+module.exports._internals = { fetchTimeout, canonLabels, discoverTabs, readSurvey, readLeads, loadSnapshot, resetCaches: () => { SNAPSHOTS.clear(); TABS_CACHE = null; }, parseDate, detectDateOrder, pickDateColumns, buildSnapshot, tableToObjects, fetchTable, isoFromGvizDate, pack, parseCsv, csvToRows, fetchSurveyCsv, isDateLike, NAMES_CHUNK, SNAPSHOTS };
