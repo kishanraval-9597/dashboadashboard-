@@ -50,6 +50,7 @@ const ALIASES = {
   'restaurant name': 'Res Name', 'employee': 'Employee Name', 'surveyor name': 'Employee Name',
 };
 const NAMES_CHUNK = 40000;                              // restaurant names per response
+const ADDR_CHUNK = 10000;                               // addresses are longer than names, so fewer per response
 const SNAPSHOT_TTL_MS = 60 * 1000;                      // reuse a freshly built snapshot on a warm instance
 const MAX_PAYLOAD_CHARS = 4200000;                      // Vercel limits a function response to ~4.5 MB
 const MAX_BAD_DATE_SAMPLES = 50;
@@ -123,7 +124,7 @@ async function fetchTable(target, wanted, aliases){
     const canon = labelsOf(head);
     const idByLabel = {};
     head.cols.forEach((c, i) => { const l = canon[i]; if(l && !(l in idByLabel)) idByLabel[l] = c.id; });
-    const extra = wanted === SURVEY_COLS ? canon.filter(l => isDateLike(l) && !wanted.includes(l)) : [];
+    const extra = wanted === SURVEY_COLS ? canon.filter(l => (isDateLike(l) || isAddressLike(l)) && !wanted.includes(l)) : [];
     const ids = wanted.concat(extra).map(l => idByLabel[l]).filter(Boolean);
     if(ids.length && ids.length < head.cols.length) return { table: await gviz(target, 'select ' + ids.join(',')), labels: canon };
   }catch(e){ /* fall through to the plain download */ }
@@ -163,7 +164,7 @@ const findTab = (tabs, names) => { for(const n of names){ const t = tabs.find(x 
 
 function tableToObjects(table, keep, aliases){
   const keepSet = new Set(keep);
-  const dateLikeKeep = l => keepSet.has(l) || (keep === SURVEY_COLS && isDateLike(l));
+  const dateLikeKeep = l => keepSet.has(l) || (keep === SURVEY_COLS && (isDateLike(l) || isAddressLike(l)));
   const cols = canonLabels(table.cols.map(c => (c.label || c.id || '').trim()), keep, aliases);
   return (table.rows || []).map(row => {
     const obj = {};
@@ -185,6 +186,22 @@ function tableToObjects(table, keep, aliases){
 const DATE_LIKE = /date|time|stamp|created|submitted|visit|day/i;
 const NOT_A_VISIT_DATE = /birth|dob|expir|due|valid|renew|anniversar|opening|open ?time|close ?time|timing|hours?\b|duration/i;
 const isDateLike = label => DATE_LIKE.test(label) && !NOT_A_VISIT_DATE.test(label);
+
+// The restaurant's address column ("Res Address", "Res Area" ...). Owner / employee / e-mail addresses are never used.
+const ADDRESS_LIKE = /address|^res(taurant)?[ _-]?ar(ea)?$|^area$|locality|location/i;
+const NOT_A_RESTAURANT_ADDRESS = /e-?mail|\bip\b|url|website|\bmac\b|owner|employee|surveyor|agent|home|residen|permanent|contact/i;
+const isAddressLike = label => ADDRESS_LIKE.test(label) && !NOT_A_RESTAURANT_ADDRESS.test(label);
+function addressRank(l){
+  const t = normLabel(l);
+  if(/^res(taurant)?[ _-]?address$/.test(t)) return 0;
+  if(/address/.test(t)) return 1;
+  if(/^res(taurant)?[ _-]?ar(ea)?$/.test(t)) return 2;
+  return 3;
+}
+// best column first
+function pickAddressColumns(labels){
+  return (labels || []).map((l, i) => [l, i]).filter(x => isAddressLike(x[0])).sort((a, b) => addressRank(a[0]) - addressRank(b[0]) || a[1] - b[1]).map(x => x[0]);
+}
 
 // ----------------------------------------------------------------------------- CSV (the sheet as displayed)
 // Fast reader that keeps only the columns it is told to keep. Handles quotes, "" escapes,
@@ -228,7 +245,7 @@ function csvToRows(text){
   const bom = text.charCodeAt(0) === 0xFEFF ? 1 : 0;
   let nl = text.indexOf('\n', bom); if(nl === -1) nl = text.length;
   const labels = canonLabels(parseCsv(text.slice(bom, nl).replace(/\r$/, ''), null)[0].map(s => (s || '').trim()), SURVEY_COLS, ALIASES);
-  const seen = new Set(), wanted = labels.map(l => { if(!l || seen.has(l) || !(SURVEY_COLS.includes(l) || isDateLike(l))) return false; seen.add(l); return true; });
+  const seen = new Set(), wanted = labels.map(l => { if(!l || seen.has(l) || !(SURVEY_COLS.includes(l) || isDateLike(l) || isAddressLike(l))) return false; seen.add(l); return true; });
   const arrs = parseCsv(text.slice(nl + 1), wanted);
   const idx = []; labels.forEach((l, c) => { if(wanted[c]) idx.push([l, c]); });
   const rows = new Array(arrs.length);
@@ -431,6 +448,8 @@ function buildSnapshot(surveyRows, restRows, company, sheetLabels, opts){
   };
   const sources = {}; let unresolved = 0;
   const exFirst = [], exLast = [];
+  const addrCols = pickAddressColumns(labelsForDates);
+  const addrs = new Array(survey.length); let anyAddr = false;
 
   survey.forEach((r, i) => {
     ints.region.push(D.region.id(str(r['Region'])));
@@ -458,6 +477,11 @@ function buildSnapshot(surveyRows, restRows, company, sheetLabels, opts){
     }
     ints.date.push(D.date.id(value));
     names[i] = str(r['Res Name']);
+    let ad = '';
+    for(let k = 0; k < addrCols.length && !ad; k++) ad = str(r[addrCols[k]]).replace(/\s+/g, ' ').trim();
+    if(ad.length > 300) ad = ad.slice(0, 300);
+    if(ad) anyAddr = true;
+    addrs[i] = ad;
   });
 
   const max = k => Math.max(0, D[k].arr.length - 1);
@@ -488,14 +512,17 @@ function buildSnapshot(surveyRows, restRows, company, sheetLabels, opts){
     dateUnresolved: unresolved,                  // rows where none could be read
     undatedExamples: exFirst.concat(exLast),     // a few such rows, with their sheet row numbers
     readAs: opts.kind || 'unknown',              // 'csv' (sheet text) or 'gviz'
+    // addresses are served separately in small chunks (like the names); only the fingerprints travel in this payload
+    addr: anyAddr ? { column: addrCols[0], chunk: ADDR_CHUNK, parts: Math.ceil(survey.length / ADDR_CHUNK),
+      hashes: Array.from({ length: Math.ceil(survey.length / ADDR_CHUNK) }, (_, k) => crypto.createHash('sha1').update(addrs.slice(k * ADDR_CHUNK, (k + 1) * ADDR_CHUNK).join('\n')).digest('hex').slice(0, 12)) } : null,
     companies,
     // column NAMES only, and only the ones the dashboard reads plus date-like ones (shown in "Check the date data");
     // other column names (phone, owner, address ...) are never sent
-    sheetColumns: (sheetLabels || Object.keys(surveyRows[0] || {})).filter(c => SURVEY_COLS.includes(c) || (!filtering && isDateLike(c))),
+    sheetColumns: (sheetLabels || Object.keys(surveyRows[0] || {})).filter(c => SURVEY_COLS.includes(c) || (!filtering && isDateLike(c)) || isAddressLike(c)),
     rest: { cols: restCols, rows: restRowsOut },
   };
   const v = crypto.createHash('sha1').update(JSON.stringify(body)).digest('hex').slice(0, 12);
-  return { v, payload: Object.assign({ v, generatedAt: new Date().toISOString(), company: filtering ? needle : 'ALL' }, body), names };
+  return { v, payload: Object.assign({ v, generatedAt: new Date().toISOString(), company: filtering ? needle : 'ALL' }, body), names, addrs };
 }
 
 // ----------------------------------------------------------------------------- the handler
@@ -571,6 +598,20 @@ async function handler(req, res){
       return;
     }
 
+    // ---- restaurant addresses, pinned to one data version, in chunks of ADDR_CHUNK
+    if(q.addr){
+      if(q.v !== snap.v){
+        res.setHeader('Cache-Control', 'no-store');
+        res.status(409).json({ error: 'stale', v: snap.v });
+        return;
+      }
+      const part = Math.max(0, parseInt(q.part, 10) || 0);
+      const from = part * ADDR_CHUNK;
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.status(200).json({ v: snap.v, part, from, addrs: snap.addrs.slice(from, from + ADDR_CHUNK) });
+      return;
+    }
+
     // ---- the packed dataset
     const text = JSON.stringify(snap.payload);
     if(text.length > MAX_PAYLOAD_CHARS){
@@ -592,4 +633,4 @@ async function handler(req, res){
 }
 
 module.exports = handler;
-module.exports._internals = { fetchTimeout, canonLabels, discoverTabs, readSurvey, readLeads, loadSnapshot, resetCaches: () => { SNAPSHOTS.clear(); TABS_CACHE = null; }, parseDate, detectDateOrder, pickDateColumns, buildSnapshot, tableToObjects, fetchTable, isoFromGvizDate, pack, parseCsv, csvToRows, fetchSurveyCsv, isDateLike, NAMES_CHUNK, SNAPSHOTS };
+module.exports._internals = { ADDR_CHUNK, isAddressLike, pickAddressColumns, fetchTimeout, canonLabels, discoverTabs, readSurvey, readLeads, loadSnapshot, resetCaches: () => { SNAPSHOTS.clear(); TABS_CACHE = null; }, parseDate, detectDateOrder, pickDateColumns, buildSnapshot, tableToObjects, fetchTable, isoFromGvizDate, pack, parseCsv, csvToRows, fetchSurveyCsv, isDateLike, NAMES_CHUNK, SNAPSHOTS };
