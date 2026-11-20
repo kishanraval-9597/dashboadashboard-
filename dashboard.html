@@ -1042,6 +1042,154 @@
   #refreshBtn:hover{ background:var(--brand-tint); }
   #refreshBtn:focus-visible{ outline:3px solid var(--brand); outline-offset:2px; }
   #refreshBtn[disabled]{ opacity:.6; cursor:progress; }
+  /* ====================== Restaurant search ====================== */
+  .srch{ margin:0 0 22px; }
+  /* the browser's own [hidden] rule loses to any display: set below, so state it explicitly for everything we hide */
+  .srch [hidden], .rp[hidden], .rp-backdrop[hidden]{ display:none !important; }
+  .srch-hero{ position:relative; background:linear-gradient(180deg,#FFFFFF 0%,#FBFAF6 100%); border:1px solid var(--line); border-radius:18px; padding:24px 26px 22px; overflow:hidden;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 2px 4px rgba(33,30,26,.06), 0 22px 44px -16px rgba(44,74,110,.26); }
+  .srch-hero::before{ content:''; position:absolute; left:0; right:0; top:0; height:4px; background:linear-gradient(90deg,var(--brand) 0%,var(--teal) 55%,#C8883A 100%); }
+  .srch-head{ display:flex; justify-content:space-between; align-items:center; gap:10px 18px; flex-wrap:wrap; margin-bottom:16px; }
+  .srch-title{ display:flex; align-items:center; gap:10px; font-family:'Fraunces',serif; font-weight:600; font-size:22px; color:var(--ink); flex-wrap:wrap; }
+  .srch-title-ic{ width:36px; height:36px; border-radius:11px; background:var(--brand-tint); color:var(--brand); display:grid; place-items:center; }
+  .srch-sub{ font-family:'Inter',sans-serif; font-weight:500; font-size:13px; color:var(--ink-soft); }
+  .srch-keys{ font-size:12px; color:var(--ink-soft); display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .srch-keys kbd{ font-family:'JetBrains Mono',monospace; font-size:11px; background:#fff; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:1px 6px; color:var(--ink); }
+  .srch-bar{ display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid var(--line); border-radius:16px; padding:6px 8px 6px 18px; min-height:62px;
+    box-shadow:0 1px 2px rgba(33,30,26,.05); transition:border-color .15s ease, box-shadow .15s ease; }
+  .srch-bar:focus-within{ border-color:var(--brand); box-shadow:0 0 0 4px rgba(44,74,110,.14), 0 12px 28px -12px rgba(44,74,110,.4); }
+  .srch-bar > svg{ flex:0 0 auto; color:var(--brand); }
+  #srchInput{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:500 18px 'Inter',sans-serif; color:var(--ink); padding:12px 4px; }
+  #srchInput::placeholder{ color:#6B778C; font-weight:400; }
+  .srch-spin{ width:18px; height:18px; border-radius:50%; border:2.5px solid #DCE3EC; border-top-color:var(--brand); animation:dashspin .8s linear infinite; flex:0 0 auto; }
+  .srch-clear{ border:0; background:#EEF1F5; color:var(--ink-soft); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:14px; flex:0 0 auto; }
+  .srch-clear:hover{ background:#E1E6EE; color:var(--ink); }
+  .srch-go{ border:0; background:var(--brand); color:#fff; font:700 15px 'Inter',sans-serif; padding:0 24px; height:46px; border-radius:12px; cursor:pointer; flex:0 0 auto; transition:background .15s, transform .05s; }
+  .srch-go:hover{ background:var(--brand-deep); } .srch-go:active{ transform:translateY(1px); }
+  .srch-go:focus-visible, .srch-clear:focus-visible, .srch-chip:focus-visible, .seg button:focus-visible, .srch-item:focus-visible, .rp button:focus-visible, .rp a:focus-visible, .srch select:focus-visible{ outline:3px solid var(--brand); outline-offset:2px; }
+  .srch-status{ min-height:22px; margin:10px 2px 0; font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .srch-status .bar{ width:150px; height:6px; border-radius:99px; background:#E6EAF0; overflow:hidden; }
+  .srch-status .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--brand),var(--teal)); border-radius:99px; transition:width .25s ease; }
+  .srch-status .err{ color:var(--brick); font-weight:600; }
+  .srch-status button{ border:0; background:none; color:var(--brand); font-weight:700; cursor:pointer; text-decoration:underline; font-size:13px; padding:0; }
+  .srch-suggest{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; }
+  .srch-suggest .lab{ font-size:12px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--ink-soft); margin-right:2px; }
+  .srch-chip{ border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:999px; padding:7px 14px; font:600 13px 'Inter',sans-serif; cursor:pointer; transition:background .12s, border-color .12s, transform .05s; display:inline-flex; align-items:center; gap:6px; }
+  .srch-chip:hover{ background:var(--brand-tint); border-color:#C9D6E3; } .srch-chip:active{ transform:translateY(1px); }
+  .srch-chip.on{ background:var(--brand); color:#fff; border-color:var(--brand); }
+  .srch-chip .cdot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+  .srch-panel{ margin-top:18px; animation:srchIn .25s ease; }
+  @keyframes srchIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  .srch-sum{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+  .srch-tile{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .srch-tile .l{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--ink-soft); }
+  .srch-tile .n{ font-family:'Fraunces',serif; font-weight:700; font-size:26px; line-height:1.15; margin-top:3px; color:var(--ink); }
+  .srch-tile .s{ font:500 12px 'JetBrains Mono',monospace; color:var(--ink-soft); margin-top:2px; }
+  .srch-tile.t-yes .n{ color:var(--teal); } .srch-tile.t-no .n{ color:var(--brick); } .srch-tile.t-pp .n{ color:var(--teal); }
+  .srch-mix{ margin-top:10px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .srch-mix .row{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
+  .srch-mix .row b{ color:var(--ink); }
+  .stack{ display:flex; height:12px; border-radius:99px; overflow:hidden; background:#EEF1F5; }
+  .stack i{ display:block; height:100%; min-width:2px; }
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:9px; font-size:12px; color:var(--ink-soft); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; } .legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .srch-filters{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; margin-top:14px; }
+  .seg{ display:inline-flex; background:#EEF1F5; border-radius:11px; padding:3px; gap:2px; }
+  .seg button{ border:0; background:transparent; font:600 13px 'Inter',sans-serif; color:var(--ink-soft); padding:7px 13px; border-radius:9px; cursor:pointer; }
+  .seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(33,30,26,.14); }
+  .srch select{ font:600 13px 'Inter',sans-serif; color:var(--ink); background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 30px 8px 12px; cursor:pointer; }
+  .srch-filters .grow{ flex:1; }
+  .srch-filters .reset{ border:0; background:none; color:var(--brand); font:700 13px 'Inter',sans-serif; cursor:pointer; text-decoration:underline; }
+  .srch-resultbar{ display:flex; justify-content:space-between; gap:10px; align-items:center; margin:14px 2px 8px; font-size:13px; color:var(--ink-soft); flex-wrap:wrap; }
+  .srch-resultbar b{ color:var(--ink); }
+  .srch-list{ border:1px solid var(--line); border-radius:14px; background:#fff; overflow:hidden; }
+  .srch-item{ display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:14px; align-items:center; padding:13px 16px; border-top:1px solid var(--line); cursor:pointer; position:relative; transition:background .1s; }
+  .srch-item:first-child{ border-top:0; }
+  .srch-item:hover{ background:#FAF8F3; }
+  .srch-item.active{ background:var(--brand-tint); }
+  .srch-item.active::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--brand); }
+  .srch-av{ width:44px; height:44px; border-radius:13px; display:grid; place-items:center; font:700 15px 'Inter',sans-serif; color:#fff; letter-spacing:.02em; }
+  .srch-name{ font-weight:650; font-size:16px; color:var(--ink); line-height:1.3; overflow-wrap:anywhere; }
+  .srch-name mark{ background:#FFE7A0; color:inherit; border-radius:3px; padding:0 1px; }
+  .srch-meta{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; display:flex; flex-wrap:wrap; gap:2px 10px; }
+  .srch-meta .city{ font-weight:600; color:#3F4F6B; }
+  .dupbadge{ display:inline-block; font:700 11px 'Inter',sans-serif; background:#FBF0DA; color:#8F641D; border-radius:6px; padding:1px 6px; margin-left:6px; vertical-align:2px; }
+  .srch-tags{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .pill{ font:700 11.5px 'Inter',sans-serif; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .pill.yes{ background:var(--teal-tint); color:var(--teal); } .pill.no{ background:var(--brick-tint); color:var(--brick); } .pill.na{ background:#EEF1F5; color:#5D6B85; }
+  .swchip{ font:600 12px 'Inter',sans-serif; color:var(--ink); background:#F6F3ED; border-radius:8px; padding:4px 9px 4px 8px; border-left:3px solid var(--c,#9AA5B8); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .plat{ width:24px; height:24px; border-radius:8px; display:grid; place-items:center; font:700 11px 'Inter',sans-serif; background:#EEF1F5; color:#5D6B85; }
+  .plat.on.z{ background:#FDE7E9; color:#B01E2C; } .plat.on.s{ background:#FFEBDB; color:#A24A06; }
+  .srch-more{ text-align:center; margin-top:14px; }
+  .srch-more button{ border:1.5px solid var(--line); background:#fff; color:var(--brand); font:700 14px 'Inter',sans-serif; padding:10px 22px; border-radius:12px; cursor:pointer; }
+  .srch-more button:hover{ background:var(--brand-tint); }
+  .srch-more .note{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; }
+  .srch-empty{ text-align:center; padding:34px 20px 30px; border:1.5px dashed #D3CCBB; border-radius:14px; background:#FDFCF9; }
+  .srch-empty svg{ color:#B7BFCD; margin-bottom:8px; }
+  .srch-empty h4{ margin:0 0 6px; font-family:'Fraunces',serif; font-size:19px; color:var(--ink); }
+  .srch-empty p{ margin:0 0 12px; color:var(--ink-soft); font-size:14px; line-height:1.5; }
+  .srch-empty .sg{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .skel{ padding:6px 0; } .skel div{ height:62px; margin:8px 14px; border-radius:12px; background:linear-gradient(100deg,#F1EEE6 30%,#FAF8F3 50%,#F1EEE6 70%); background-size:200% 100%; animation:skel 1.2s linear infinite; }
+  @keyframes skel{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
+  /* ---------- restaurant profile (slide-in) ---------- */
+  html.rp-lock{ overflow:hidden; }
+  .rp-backdrop{ position:fixed; inset:0; background:rgba(33,30,26,.46); z-index:60; opacity:0; transition:opacity .22s ease; }
+  .rp-backdrop.open{ opacity:1; }
+  .rp{ position:fixed; top:0; right:0; bottom:0; width:min(500px,100vw); background:var(--paper); z-index:61; transform:translateX(102%); transition:transform .3s cubic-bezier(.2,.8,.2,1); overflow-y:auto; box-shadow:-24px 0 60px rgba(0,0,0,.25); overscroll-behavior:contain; }
+  .rp.open{ transform:none; }
+  .rp-head{ position:relative; padding:22px 22px 18px; background:linear-gradient(135deg,#1D3450 0%,#2C4A6E 60%,#1E6B67 140%); color:#fff; }
+  .rp-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px; }
+  .rp-nav{ display:flex; gap:6px; align-items:center; font-size:12px; color:#C9D6E3; }
+  .rp-btn{ border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.10); color:#fff; width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:16px; }
+  .rp-btn:hover{ background:rgba(255,255,255,.2); } .rp-btn[disabled]{ opacity:.35; cursor:default; }
+  .rp-id{ display:flex; gap:14px; align-items:center; }
+  .rp-av{ width:58px; height:58px; border-radius:17px; display:grid; place-items:center; font:700 20px 'Inter',sans-serif; color:#fff; flex:0 0 auto; box-shadow:0 0 0 3px rgba(255,255,255,.22); }
+  .rp-title{ font-family:'Fraunces',serif; font-weight:700; font-size:25px; line-height:1.2; margin:0; overflow-wrap:anywhere; }
+  .rp-sub{ margin-top:4px; font-size:13px; color:#C9D6E3; }
+  .rp-body{ padding:18px 20px 110px; }
+  .rp-status{ display:flex; gap:14px; align-items:center; border-radius:14px; padding:14px 16px; margin-bottom:16px; border:1px solid; }
+  .rp-status .ic{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-size:20px; flex:0 0 auto; }
+  .rp-status h4{ margin:0; font:700 17px 'Inter',sans-serif; } .rp-status p{ margin:2px 0 0; font-size:13px; opacity:.85; }
+  .rp-status.yes{ background:var(--teal-tint); border-color:#BFDCD8; color:#14504C; } .rp-status.yes .ic{ background:#fff; }
+  .rp-status.no{ background:var(--brick-tint); border-color:#E8C2B9; color:#8C3022; } .rp-status.no .ic{ background:#fff; }
+  .rp-status.na{ background:#EEF1F5; border-color:#D5DBE5; color:#3F4F6B; } .rp-status.na .ic{ background:#fff; }
+  .rp-h{ font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin:20px 2px 9px; }
+  .rp-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .rp-fact{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .rp-fact.wide{ grid-column:1 / -1; }
+  .rp-fact .k{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--ink-soft); }
+  .rp-fact .v{ margin-top:4px; font-weight:650; font-size:15.5px; color:var(--ink); overflow-wrap:anywhere; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .rp-fact .v small{ font-weight:500; color:var(--ink-soft); font-size:12.5px; }
+  .rp-fact .v i{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+  .rp-ctx{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:13.5px; line-height:1.6; color:#3F4F6B; }
+  .rp-ctx b{ color:var(--ink); }
+  .rp-dup{ background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .rp-dup button{ display:flex; width:100%; justify-content:space-between; align-items:center; gap:10px; text-align:left; border:0; border-top:1px solid var(--line); background:#fff; padding:11px 14px; cursor:pointer; font:500 13.5px 'Inter',sans-serif; color:var(--ink); }
+  .rp-dup button:first-child{ border-top:0; } .rp-dup button:hover{ background:#FAF8F3; } .rp-dup button.cur{ background:var(--brand-tint); cursor:default; }
+  .rp-warn{ background:#FBF1DC; border:1px solid #E3C98C; color:#5C4310; border-radius:10px; padding:10px 13px; font-size:13px; margin-bottom:10px; line-height:1.5; }
+  .rp-foot{ position:sticky; bottom:0; display:flex; gap:10px; padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px)); background:linear-gradient(180deg,rgba(246,243,237,0),var(--paper) 30%); }
+  .rp-foot .btn{ flex:1; border:1.5px solid var(--line); background:#fff; color:var(--brand); font:700 14px 'Inter',sans-serif; padding:12px 10px; border-radius:12px; cursor:pointer; text-align:center; text-decoration:none; display:inline-flex; justify-content:center; align-items:center; gap:7px; }
+  .rp-foot .btn.primary{ background:var(--brand); color:#fff; border-color:var(--brand); }
+  .rp-foot .btn:hover{ filter:brightness(.96); }
+  @media (max-width:720px){
+    .srch-hero{ padding:20px 16px 18px; border-radius:16px; }
+    .srch-keys{ display:none; }
+    .srch-bar{ padding-left:14px; min-height:56px; } #srchInput{ font-size:16px; }
+    .srch-go{ padding:0 16px; height:42px; }
+    .srch-sum{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .srch-item{ grid-template-columns:44px minmax(0,1fr); padding:12px 14px; }
+    .srch-tags{ grid-column:1 / -1; justify-content:flex-start; margin-left:58px; }
+    .seg button{ padding:9px 14px; min-height:44px; } .seg{ padding:3px; } .srch select{ padding:10px 30px 10px 12px; min-height:44px; }
+    .srch-chip{ padding:9px 15px; min-height:44px; } .srch-clear{ width:44px; height:44px; } .srch-go{ min-height:44px; }
+    .srch-more button, .srch-filters .reset, .srch-status button{ min-height:44px; } .srch-filters .reset, .srch-status button{ padding:0 10px; }
+    .rp{ top:auto; left:0; right:0; width:100%; height:90vh; border-radius:22px 22px 0 0; transform:translateY(102%); box-shadow:0 -20px 60px rgba(0,0,0,.28); }
+    .rp.open{ transform:none; }
+    .rp-head{ border-radius:22px 22px 0 0; }
+    .rp-btn{ width:44px; height:44px; }
+    .rp-grid{ grid-template-columns:1fr 1fr; }
+    .rp-foot{ gap:8px; padding-left:14px; padding-right:14px; } .rp-foot .btn{ font-size:13px; padding:12px 6px; gap:5px; min-width:0; min-height:44px; line-height:1.2; }
+  }
+  @media (prefers-reduced-motion:reduce){ .rp, .rp-backdrop, .srch-panel, .srch-bar, .srch-chip, .srch-go{ transition:none !important; animation:none !important; } .skel div, .srch-spin{ animation-duration:2.4s !important; } }
   .loading-card{ display:flex; align-items:center; gap:18px; width:100%; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 26px; box-shadow:0 2px 4px rgba(33,30,26,.07), 0 10px 24px rgba(33,30,26,.08); }
   .loading-title{ font-family:'Fraunces',serif; font-weight:600; font-size:20px; color:var(--ink); }
   .loading-note{ font-size:13.5px; color:var(--ink-soft); margin-top:4px; line-height:1.5; }
@@ -1365,6 +1513,41 @@
       <button type="button" id="refreshBtn" class="secondary-btn" title="Fetch the newest data from the sheet right now">↻ Refresh data</button>
     </div>
   </header>
+
+  <!-- ===================== RESTAURANT SEARCH ===================== -->
+  <section class="srch" id="srch" aria-label="Restaurant search">
+    <div class="srch-hero">
+      <div class="srch-head">
+        <div class="srch-title">
+          <span class="srch-title-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+          <span>Restaurant search</span>
+          <span class="srch-sub" id="srchSub">across the entire survey</span>
+        </div>
+        <div class="srch-keys" aria-hidden="true"><kbd>/</kbd> search <span>·</span> <kbd>↑</kbd><kbd>↓</kbd> move <span>·</span> <kbd>Enter</kbd> open <span>·</span> <kbd>Esc</kbd> close</div>
+      </div>
+      <div class="srch-bar" role="search">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="srchInput" type="text" role="combobox" aria-expanded="false" aria-controls="srchList" aria-autocomplete="list" aria-label="Search restaurants" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="80" placeholder="Type a restaurant name — e.g. “Hunger N Hunt” or “Sagar Mumbai”">
+        <span class="srch-spin" id="srchSpin" hidden aria-hidden="true"></span>
+        <button type="button" id="srchClear" class="srch-clear" aria-label="Clear search" hidden>✕</button>
+        <button type="button" id="srchGo" class="srch-go">Search</button>
+      </div>
+      <div class="srch-status" id="srchStatus" role="status" aria-live="polite"></div>
+      <div class="srch-suggest" id="srchSuggest"></div>
+      <div class="srch-panel" id="srchPanel" hidden>
+        <div class="srch-summary" id="srchSummary"></div>
+        <div class="srch-filters" id="srchFilters"></div>
+        <div class="srch-resultbar" id="srchResultBar"></div>
+        <div class="srch-list" id="srchList" role="listbox" aria-label="Matching restaurants"></div>
+        <div class="srch-more" id="srchMore"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rp-backdrop" id="rpBackdrop" hidden></div>
+  <aside class="rp" id="rp" role="dialog" aria-modal="true" aria-labelledby="rpTitle" aria-hidden="true" hidden>
+    <div class="rp-inner" id="rpInner"></div>
+  </aside>
 
   <div class="quick-access-card" id="quickAccessCard">
     <div class="quick-access-tabs">
@@ -3392,12 +3575,27 @@ function drillName(r){
   return NAMES_FAILED ? '(name unavailable)' : 'loading…';
 }
 function refreshOpenDrills(){ (window.CITY_SYNC_TARGETS || []).forEach(t => { try{ t.render(t.sel.value); }catch(e){} }); }
+let NAMES_PROGRESS = { done: 0, total: 0 };
 function ensureNames(){
   if(!LAST_PAYLOAD || NAMES !== null || NAMES_FAILED) return Promise.resolve();
   if(NAMES_PROMISE) return NAMES_PROMISE;
   const { v, names } = LAST_PAYLOAD;
-  const part = k => fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}&names=1&part=${k}&v=${v}`)
-    .then(r => r.status === 409 ? Promise.reject(new Error('stale')) : r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+  const hashes = names.hashes || [];
+  NAMES_PROGRESS = { done: 0, total: names.parts };
+  const part = async k => {
+    const h = hashes[k], key = `names:${COMPANY}:${k}`;
+    if(h){                                                     // a chunk we already hold, unchanged since: no download
+      const hit = await idbGet(key);
+      if(hit && hit.h === h && Array.isArray(hit.names)){ NAMES_PROGRESS.done++; srchNamesProgress(); return { names: hit.names }; }
+    }
+    const r = await fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}&names=1&part=${k}&v=${v}`);
+    if(r.status === 409) throw new Error('stale');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if(h) idbSet(key, { h, names: j.names });
+    NAMES_PROGRESS.done++; srchNamesProgress();
+    return j;
+  };
   NAMES_PROMISE = Promise.all(Array.from({ length: names.parts }, (_, k) => part(k))).then(chunks => {
     if(!LAST_PAYLOAD || LAST_PAYLOAD.v !== v) return;       // newer data arrived meanwhile — names no longer line up
     const all = []; chunks.forEach(c => c.names.forEach(nm => all.push(nm)));
@@ -3405,7 +3603,7 @@ function ensureNames(){
   }).catch(err => {
     NAMES_FAILED = true;
     if(err && err.message === 'stale'){ FORCE_FRESH = true; NAMES_FAILED = false; setTimeout(() => loadAll(true), 0); }   // server has newer data: refresh once
-  }).then(() => { NAMES_PROMISE = null; refreshOpenDrills(); });
+  }).then(() => { NAMES_PROMISE = null; refreshOpenDrills(); srchNamesSettled(); });
   return NAMES_PROMISE;
 }
 function prefetchNamesWhenIdle(){
@@ -3413,6 +3611,537 @@ function prefetchNamesWhenIdle(){
   if(c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''))) return;     // don't spend a slow/metered connection on names nobody asked for
   const go = () => ensureNames();
   (window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 4000 }) : setTimeout(go, 2500));
+}
+
+// =============================================================================
+// RESTAURANT SEARCH — searches every row of the survey (the whole sheet), instantly, in the browser.
+// =============================================================================
+let CURRENT_SURVEY = [];                 // the survey rows currently on the dashboard (set by renderAll)
+let SRCH_NONWORD;
+try{ SRCH_NONWORD = new RegExp('[^\\p{L}\\p{N}]+', 'gu'); }catch(e){ SRCH_NONWORD = /[^a-z0-9\u0900-\u097F]+/g; }
+const srchEl = id => document.getElementById(id);
+// lower-case, "&" -> "and", punctuation -> space, single spaces: "Hunger-N-Hunt!" and "hunger n hunt" are the same
+const SRCH_ASCII = /^[\x00-\x7F]*$/;
+function srchNorm(s){
+  s = s == null ? '' : String(s);
+  if(SRCH_ASCII.test(s)){                                   // plain English text: no accent / Unicode work needed
+    if(s.indexOf('&') !== -1) s = s.replace(/&/g, ' and ');
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' and ').replace(SRCH_NONWORD, ' ').replace(/\s+/g, ' ').trim();
+}
+// same folding, but guaranteed to keep the text the same LENGTH so match positions line up with the original (used for highlighting)
+function srchFoldKeepLen(text){ let o = ''; for(let k = 0; k < text.length; k++){ const u = text[k], f = u.normalize('NFD')[0] || u; o += (f.toLowerCase()[0] || f); } return o; }
+
+const SRCH_PAGE = 20, SRCH_CAP = 500;
+var SRCH_STATE_HANDLE;
+const SRCH = { q:'', city:'ALL', status:'ALL', bucket:'ALL', sw:'ALL', plat:'ALL', sort:'auto', shown:SRCH_PAGE, active:-1,
+  idx:null, tokens:[], order:[], stats:null, help:null, timer:null, profileI:-1, lastFocus:null, closeTimer:null, recent:[], short:false };
+window.__srch = SRCH;
+const SRCH_PRESETS = [
+  { id:'yes',    label:'Available restaurants', color:'#1E6B67', set:{ status:'yes' } },
+  { id:'no',     label:'Not available',         color:'#B44736', set:{ status:'no' } },
+  { id:'pp',     label:'Petpooja users',        color:'#1E6B67', set:{ status:'yes', bucket:'petpooja' } },
+  { id:'manual', label:'Manual-billing leads',  color:'#8F641D', set:{ status:'yes', bucket:'manualOffline' } },
+  { id:'cloud',  label:'Cloud competitors',     color:'#B44736', set:{ status:'yes', bucket:'cloudCompetition' } },
+  { id:'zom',    label:'Live on Zomato',        color:'#E23744', set:{ plat:'zomato' } },
+];
+const BUCKET_LABEL = { petpooja:'Petpooja', manualOffline:'Manual & offline', cloudCompetition:'Cloud competitor', notAnswered:'Not answered' };
+const AV_COLORS = ['#2C4A6E', '#1E6B67', '#8F641D', '#B44736', '#6B6FA8', '#3F7D58', '#A0527A', '#4F6D8F'];
+
+// ---------------------------------------------------------------- reading a row
+function srchRowName(r){
+  if(r['Res Name'] !== undefined) return r['Res Name'] == null ? '' : String(r['Res Name']);     // direct-mode rows carry their names
+  if(NAMES && r.__i !== undefined) return NAMES[r.__i] || '';
+  return '';
+}
+function srchNamesReady(){ return !LAST_PAYLOAD || NAMES !== null; }
+function srchDay(r){
+  const d = r['Date'];
+  if(typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
+  const dt = parseDate(d);
+  return dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}` : '';
+}
+function srchDateText(day){
+  if(!day) return 'No date';
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+function srchDaysAgo(day){
+  if(!day) return '';
+  const [y, m, d] = day.split('-').map(Number), now = new Date();
+  const n = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(y, m - 1, d)) / 86400000);
+  return n === 0 ? 'today' : n === 1 ? 'yesterday' : n > 1 ? n + ' days ago' : '';
+}
+const srchStatusOf = r => isYes(r['Res Available']) ? 'yes' : isNo(r['Res Available']) ? 'no' : 'other';
+const srchSwText = r => { const raw = String(r['Ex Software'] == null ? '' : r['Ex Software']).trim(); return classifySoftware(raw) === 'notAnswered' ? (raw && raw !== '-' ? raw : 'Not answered') : softwareLabel(raw); };
+const srchSheetRow = i => (COMPANY.toUpperCase() === 'ALL') ? i + 2 : null;      // sheet row = position + 2 (row 1 is the header); only exact for the all-companies view
+
+// ---------------------------------------------------------------- the index (built once per data copy)
+function srchIndexInit(){
+  const n = CURRENT_SURVEY.length;
+  return { rows: CURRENT_SURVEY, n, nameLc: new Array(n), hay: new Array(n), cityOf: new Array(n), dayOf: new Array(n), cities: [], sws: [],
+    words: null, dup: null, dupFilled: 0, ctx: null, namesFrom: NAMES, filled: 0, done: n === 0, cityCount: new Map(), swCount: new Map(), cityNorm: new Map() };
+}
+// Fill rows [filled, until). Called in small slices while idle, or all at once if somebody searches before it is finished.
+function srchIndexStep(idx, until){
+  const rows = idx.rows, end = Math.min(until, idx.n);
+  for(let i = idx.filled; i < end; i++){
+    const r = rows[i];
+    const nn = srchNorm(srchRowName(r));
+    const city = normalizeCity(r['Region']);
+    let cn = idx.cityNorm.get(city); if(cn === undefined){ cn = srchNorm(city); idx.cityNorm.set(city, cn); }
+    idx.nameLc[i] = nn; idx.cityOf[i] = city; idx.hay[i] = nn + ' ' + cn; idx.dayOf[i] = srchDay(r);
+    idx.cityCount.set(city, (idx.cityCount.get(city) || 0) + 1);
+    const raw = r['Ex Software'];
+    if(raw && classifySoftware(raw) !== 'notAnswered'){ const lab = softwareLabel(String(raw)); idx.swCount.set(lab, (idx.swCount.get(lab) || 0) + 1); }
+  }
+  idx.filled = end;
+  if(idx.filled >= idx.n && !idx.done){
+    idx.cities = [...idx.cityCount.entries()].filter(([c]) => c && c !== 'Unknown').sort((a, b) => b[1] - a[1]).slice(0, 16).map(x => x[0]);
+    idx.sws = [...idx.swCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map(x => x[0]);
+    idx.done = true;
+  }
+}
+const srchIndexStale = () => !SRCH.idx || SRCH.idx.rows !== CURRENT_SURVEY || SRCH.idx.namesFrom !== NAMES;
+function srchBuildIndex(){                                 // build everything right now
+  if(srchIndexStale()) SRCH.idx = srchIndexInit();
+  srchIndexStep(SRCH.idx, SRCH.idx.n);
+}
+function srchReadySync(){
+  if(!CURRENT_SURVEY.length || !srchNamesReady()) return false;
+  if(srchIndexStale()) SRCH.idx = srchIndexInit();
+  if(!SRCH.idx.done) srchIndexStep(SRCH.idx, SRCH.idx.n);   // finish whatever the background work had not reached yet
+  return true;
+}
+
+// ---------------------------------------------------------------- matching + ranking
+function srchTokens(q){ return srchNorm(q).split(' ').filter(Boolean).slice(0, 8); }
+const srchHasFilters = () => SRCH.city !== 'ALL' || SRCH.status !== 'ALL' || SRCH.bucket !== 'ALL' || SRCH.sw !== 'ALL' || SRCH.plat !== 'ALL';
+
+function srchScore(name, toks, phrase){
+  let s = 0;
+  if(name === phrase) s += 1000;
+  else if(name.startsWith(phrase)) s += 700;
+  else if(name.indexOf(' ' + phrase) !== -1) s += 500;
+  else if(name.indexOf(phrase) !== -1) s += 300;
+  for(let k = 0; k < toks.length; k++){
+    const t = toks[k];
+    if(name.startsWith(t)) s += 60; else if(name.indexOf(' ' + t) !== -1) s += 40; else if(name.indexOf(t) !== -1) s += 15; else s += 5;   // 5 = matched only through the city
+  }
+  return s - Math.min(name.length, 80) * 0.5;               // shorter, more specific names first
+}
+
+// Every row that passes the filters and contains ALL the words; plus the summary numbers for exactly those rows.
+function srchCompute(toks){
+  const idx = SRCH.idx, rows = idx.rows, n = idx.n, phrase = toks.join(' ');
+  const ids = [], scores = [];
+  const st = { total:0, yes:0, no:0, other:0, bucket:{ petpooja:0, manualOffline:0, cloudCompetition:0, notAnswered:0 }, zomato:0, swiggy:0 };
+  const fCity = SRCH.city, fStatus = SRCH.status, fBucket = SRCH.bucket, fSw = SRCH.sw, fPlat = SRCH.plat;
+  for(let i = 0; i < n; i++){
+    if(fCity !== 'ALL' && idx.cityOf[i] !== fCity) continue;
+    const r = rows[i];
+    const y = isYes(r['Res Available']), no = !y && isNo(r['Res Available']);
+    if(fStatus !== 'ALL' && (fStatus === 'yes' ? !y : fStatus === 'no' ? !no : (y || no))) continue;
+    if(fBucket !== 'ALL' && classifySoftware(r['Ex Software']) !== fBucket) continue;
+    if(fSw !== 'ALL'){ const raw = r['Ex Software']; if(!raw || softwareLabel(String(raw)) !== fSw) continue; }
+    if(fPlat === 'zomato' && !isYes(r['Zomato Live'])) continue;
+    if(fPlat === 'swiggy' && !isYes(r['Swiggy Live'])) continue;
+    let score = 0;
+    if(toks.length){
+      const h = idx.hay[i]; let hit = true;
+      for(let k = 0; k < toks.length; k++){ if(h.indexOf(toks[k]) === -1){ hit = false; break; } }
+      if(!hit) continue;
+      score = srchScore(idx.nameLc[i], toks, phrase);
+    }
+    ids.push(i); scores.push(score);
+    st.total++;
+    if(y){ st.yes++; st.bucket[classifySoftware(r['Ex Software'])]++; if(isYes(r['Zomato Live'])) st.zomato++; if(isYes(r['Swiggy Live'])) st.swiggy++; }
+    else if(no) st.no++; else st.other++;
+  }
+  return { ids, scores, stats: st };
+}
+function srchOrder(res, sortMode, hasQuery){
+  const ids = res.ids, scores = res.scores, idx = SRCH.idx, dayOf = idx.dayOf, nameLc = idx.nameLc;
+  const mode = sortMode === 'auto' ? (hasQuery ? 'relevance' : 'newest') : sortMode;
+  const order = ids.map((_, k) => k);
+  order.sort((a, b) => {
+    const ia = ids[a], ib = ids[b];
+    if(mode === 'relevance' && scores[b] !== scores[a]) return scores[b] - scores[a];
+    if(mode === 'name'){ if(nameLc[ia] !== nameLc[ib]) return nameLc[ia] < nameLc[ib] ? -1 : 1; return ia - ib; }
+    const da = dayOf[ia] || (mode === 'oldest' ? '9999' : ''), db = dayOf[ib] || (mode === 'oldest' ? '9999' : '');
+    if(da !== db) return mode === 'oldest' ? (da < db ? -1 : 1) : (da < db ? 1 : -1);
+    return mode === 'oldest' ? ia - ib : ib - ia;
+  });
+  return order.map(k => ids[k]);
+}
+
+// ---------------------------------------------------------------- "did you mean" + "without …" helpers (used when nothing matches)
+function srchWords(){
+  const idx = SRCH.idx;
+  if(idx.words) return idx.words;
+  const m = new Map();
+  for(let i = 0; i < idx.n; i++){ const nm = idx.nameLc[i]; if(!nm) continue; const ws = nm.split(' '); for(let k = 0; k < ws.length; k++){ const w = ws[k]; if(w.length >= 3) m.set(w, (m.get(w) || 0) + 1); } }
+  return (idx.words = m);
+}
+function srchLev(a, b, max){
+  if(Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = new Array(b.length + 1); for(let j = 0; j <= b.length; j++) prev[j] = j;
+  for(let i = 1; i <= a.length; i++){
+    const cur = [i]; let rowMin = i;
+    for(let j = 1; j <= b.length; j++){ const v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1)); cur[j] = v; if(v < rowMin) rowMin = v; }
+    if(rowMin > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function srchHelp(toks){
+  const idx = SRCH.idx, out = { fix:null, relax:[] };
+  const words = srchWords(), fixed = []; let changed = false;
+  toks.forEach(t => {
+    if(t.length < 3 || idx.nameLc.some(nm => nm.indexOf(t) !== -1)){ fixed.push(t); return; }
+    const max = t.length >= 7 ? 2 : 1; let best = null, bd = 99, bf = 0;
+    words.forEach((f, w) => { if(Math.abs(w.length - t.length) > max) return; const d = srchLev(t, w, max); if(d < bd || (d === bd && f > bf)){ best = w; bd = d; bf = f; } });
+    if(best && bd <= max){ fixed.push(best); changed = true; } else fixed.push(t);
+  });
+  if(changed){ const c = srchCompute(fixed); if(c.ids.length) out.fix = { q: fixed.join(' '), count: c.ids.length }; }
+  if(toks.length >= 2){
+    toks.forEach((t, k) => { const rest = toks.filter((_, j) => j !== k); const c = srchCompute(rest); if(c.ids.length) out.relax.push({ drop: t, q: rest.join(' '), count: c.ids.length }); });
+    out.relax.sort((a, b) => b.count - a.count); out.relax = out.relax.slice(0, 3);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- duplicates + city context (computed on demand)
+function srchDupStep(idx, until){
+  if(!idx.dup) idx.dup = new Map();
+  const end = Math.min(until, idx.n);
+  for(let k = idx.dupFilled; k < end; k++){ const nm = idx.nameLc[k]; if(!nm) continue; const key = nm + '|' + idx.cityOf[k]; const a = idx.dup.get(key); if(a) a.push(k); else idx.dup.set(key, [k]); }
+  idx.dupFilled = end;
+}
+function srchDupGroup(i){
+  const idx = SRCH.idx;
+  if(idx.dupFilled < idx.n) srchDupStep(idx, idx.n);
+  const nm = idx.nameLc[i];
+  return nm ? (idx.dup.get(nm + '|' + idx.cityOf[i]) || [i]) : [i];
+}
+function srchCityContext(city){
+  const idx = SRCH.idx;
+  if(!idx.ctx){
+    const m = new Map();
+    for(let i = 0; i < idx.n; i++){ const r = idx.rows[i], c = idx.cityOf[i]; let o = m.get(c); if(!o){ o = { n:0, yes:0, pp:0, manual:0 }; m.set(c, o); }
+      o.n++; if(isYes(r['Res Available'])){ o.yes++; const b = classifySoftware(r['Ex Software']); if(b === 'petpooja') o.pp++; else if(b === 'manualOffline') o.manual++; } }
+    idx.ctx = m;
+  }
+  return idx.ctx.get(city) || null;
+}
+
+// ---------------------------------------------------------------- small view helpers
+function srchHighlight(raw, toks){
+  const text = String(raw == null ? '' : raw), lc = srchFoldKeepLen(text);
+  if(!toks.length || lc.length !== text.length) return esc(text);
+  const ranges = [];
+  toks.forEach(t => { if(!t) return; let p = 0, k; while((k = lc.indexOf(t, p)) !== -1){ ranges.push([k, k + t.length]); p = k + t.length; } });
+  if(!ranges.length) return esc(text);
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [ranges[0].slice()];
+  for(let k = 1; k < ranges.length; k++){ const last = merged[merged.length - 1]; if(ranges[k][0] <= last[1]) last[1] = Math.max(last[1], ranges[k][1]); else merged.push(ranges[k].slice()); }
+  let out = '', pos = 0;
+  merged.forEach(([a, b]) => { out += esc(text.slice(pos, a)) + '<mark>' + esc(text.slice(a, b)) + '</mark>'; pos = b; });
+  return out + esc(text.slice(pos));
+}
+function srchAvatar(name, city){
+  const words = String(name || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
+  const ini = (words.length ? (words[0][0] + (words[1] ? words[1][0] : (words[0][1] || ''))) : '?').toUpperCase();
+  let h = 0; for(const ch of String(city || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return { ini, color: AV_COLORS[h % AV_COLORS.length] };
+}
+const srchPlatText = v => isYes(v) ? 'Live' : isNo(v) ? 'Not live' : 'Not recorded';
+
+function srchItemHTML(i, pos, toks){
+  const idx = SRCH.idx, r = idx.rows[i], name = srchRowName(r) || '(no name recorded)', city = idx.cityOf[i];
+  const status = srchStatusOf(r), bucket = classifySoftware(r['Ex Software']), av = srchAvatar(name, city);
+  const dups = srchDupGroup(i).length, row = srchSheetRow(i);
+  return `<div class="srch-item${pos === SRCH.active ? ' active' : ''}" role="option" id="srchOpt-${pos}" data-i="${i}" aria-selected="${pos === SRCH.active}" tabindex="-1">
+    <div class="srch-av" style="background:${av.color};" aria-hidden="true">${esc(av.ini)}</div>
+    <div>
+      <div class="srch-name">${srchHighlight(name, toks)}${dups > 1 ? `<span class="dupbadge" title="This name appears ${dups} times in the survey">×${dups}</span>` : ''}</div>
+      <div class="srch-meta"><span class="city">${esc(city)}</span><span>${esc(srchDateText(idx.dayOf[i]))}</span>${row ? `<span>Row ${fmt(row)}</span>` : ''}</div>
+    </div>
+    <div class="srch-tags">
+      <span class="pill ${status === 'yes' ? 'yes' : status === 'no' ? 'no' : 'na'}">${status === 'yes' ? 'Available' : status === 'no' ? 'Not available' : 'No answer'}</span>
+      <span class="swchip" style="--c:${METRIC_COLORS[bucket]};" title="${esc(srchSwText(r))}">${esc(srchSwText(r))}</span>
+      <span class="plat z${isYes(r['Zomato Live']) ? ' on' : ''}" title="Zomato: ${srchPlatText(r['Zomato Live'])}">Z</span>
+      <span class="plat s${isYes(r['Swiggy Live']) ? ' on' : ''}" title="Swiggy: ${srchPlatText(r['Swiggy Live'])}">S</span>
+    </div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------- rendering
+function srchUpdateStatus(){
+  const el = srchEl('srchStatus'), sub = srchEl('srchSub');
+  if(!el) return;
+  const n = CURRENT_SURVEY.length;
+  if(!n){ el.innerHTML = '<span>Waiting for the survey data…</span>'; return; }
+  if(sub) sub.textContent = `across all ${fmt(n)} surveys`;
+  if(srchNamesReady()){ el.innerHTML = `<span>Ready — ${fmt(n)} survey records are searchable.</span>`; return; }
+  if(NAMES_FAILED){ el.innerHTML = '<span class="err">Couldn’t load the restaurant names.</span> <button type="button" data-retry="1">Try again</button>'; return; }
+  const pr = NAMES_PROGRESS.total ? Math.round(NAMES_PROGRESS.done / NAMES_PROGRESS.total * 100) : 5;
+  el.innerHTML = `<span>Preparing search — loading restaurant names…</span><span class="bar"><i style="width:${Math.max(pr, 6)}%"></i></span>`;
+}
+function srchRenderSuggest(){
+  const el = srchEl('srchSuggest');
+  let h = '';
+  if(SRCH.recent.length) h += '<span class="lab">Recent</span>' + SRCH.recent.map(q => `<button type="button" class="srch-chip" data-q="${esc(q)}">↺ ${esc(q)}</button>`).join('');
+  h += '<span class="lab">Quick lists</span>' + SRCH_PRESETS.map(p => `<button type="button" class="srch-chip" data-preset="${p.id}"><span class="cdot" style="background:${p.color}"></span>${esc(p.label)}</button>`).join('');
+  el.innerHTML = h;
+}
+function srchRenderSummary(st){
+  const el = srchEl('srchSummary');
+  if(!st || !st.total){ el.innerHTML = ''; return; }
+  const bs = st.bucket, yes = st.yes;
+  const seg = k => yes ? `<i style="width:${(bs[k] / yes * 100).toFixed(2)}%;background:${METRIC_COLORS[k]}" title="${BUCKET_LABEL[k]}: ${fmt(bs[k])}"></i>` : '';
+  el.innerHTML = `<div class="srch-sum">
+      <div class="srch-tile"><div class="l">Matches</div><div class="n">${fmt(st.total)}</div><div class="s">${st.total === CURRENT_SURVEY.length ? 'entire survey' : pct(st.total, CURRENT_SURVEY.length) + '% of all surveys'}</div></div>
+      <div class="srch-tile t-yes"><div class="l">Available</div><div class="n">${fmt(st.yes)}</div><div class="s">${pct(st.yes, st.total)}% of matches</div></div>
+      <div class="srch-tile t-no"><div class="l">Not available</div><div class="n">${fmt(st.no)}</div><div class="s">${pct(st.no, st.total)}% of matches${st.other ? ' · ' + fmt(st.other) + ' no answer' : ''}</div></div>
+      <div class="srch-tile t-pp"><div class="l">Petpooja users</div><div class="n">${fmt(bs.petpooja)}</div><div class="s">${pct(bs.petpooja, yes)}% of available</div></div>
+    </div>
+    ${yes ? `<div class="srch-mix"><div class="row"><span><b>Billing software</b> among the ${fmt(yes)} available restaurants</span><span>Zomato <b>${fmt(st.zomato)}</b> (${pct(st.zomato, yes)}%) · Swiggy <b>${fmt(st.swiggy)}</b> (${pct(st.swiggy, yes)}%)</span></div>
+      <div class="stack" role="img" aria-label="Software mix">${seg('petpooja')}${seg('manualOffline')}${seg('cloudCompetition')}${seg('notAnswered')}</div>
+      <div class="legend">${['petpooja', 'manualOffline', 'cloudCompetition', 'notAnswered'].map(k => `<span><i style="background:${METRIC_COLORS[k]}"></i>${BUCKET_LABEL[k]} <b>${fmt(bs[k])}</b> · ${pct(bs[k], yes)}%</span>`).join('')}</div></div>` : ''}`;
+}
+function srchRenderFilters(){
+  const idx = SRCH.idx, el = srchEl('srchFilters');
+  const seg = (key, opts) => `<div class="seg" role="group" aria-label="${key}">` + opts.map(([v, l]) => `<button type="button" data-f="${key}" data-v="${v}" class="${SRCH[key] === v ? 'on' : ''}" aria-pressed="${SRCH[key] === v}">${l}</button>`).join('') + '</div>';
+  const chip = (key, v, label, color) => `<button type="button" class="srch-chip${SRCH[key] === v ? ' on' : ''}" data-f="${key}" data-v="${SRCH[key] === v ? 'ALL' : v}" aria-pressed="${SRCH[key] === v}">${color ? `<span class="cdot" style="background:${color}"></span>` : ''}${label}</button>`;
+  el.innerHTML = seg('status', [['ALL', 'All'], ['yes', 'Available'], ['no', 'Not available']]) +
+    `<select id="srchCity" aria-label="City"><option value="ALL">All cities</option>${idx.cities.map(c => `<option value="${esc(c)}"${SRCH.city === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>` +
+    ['petpooja', 'manualOffline', 'cloudCompetition', 'notAnswered'].map(k => chip('bucket', k, BUCKET_LABEL[k], METRIC_COLORS[k])).join('') +
+    `<select id="srchSw" aria-label="Billing software"><option value="ALL">Any software</option>${idx.sws.map(s => `<option value="${esc(s)}"${SRCH.sw === s ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select>` +
+    chip('plat', 'zomato', 'Zomato', '#E23744') + chip('plat', 'swiggy', 'Swiggy', '#E8690B') +
+    (srchHasFilters() ? '<button type="button" class="reset" data-reset="1">Clear filters</button>' : '');
+}
+function srchEmptyHTML(){
+  const h = SRCH.help, q = SRCH.q.trim();
+  const sg = [];
+  if(h && h.fix) sg.push(`<button type="button" class="srch-chip" data-fixq="${esc(h.fix.q)}"><span>Did you mean “${esc(h.fix.q)}” <b>(${fmt(h.fix.count)})</b>?</span></button>`);
+  if(h) h.relax.forEach(x => sg.push(`<button type="button" class="srch-chip" data-fixq="${esc(x.q)}"><span>Without “${esc(x.drop)}” <b>(${fmt(x.count)})</b></span></button>`));
+  if(srchHasFilters()) sg.push('<button type="button" class="srch-chip" data-reset="1">Clear all filters</button>');
+  return `<div class="srch-empty"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8.5 11h5"/></svg>
+    <h4>No restaurants found${q ? ` for “${esc(q)}”` : ''}</h4>
+    <p>Check the spelling, try fewer words, or search by one part of the name. ${srchHasFilters() ? 'Your filters may also be narrowing the results.' : ''}</p>
+    ${sg.length ? `<div class="sg">${sg.join('')}</div>` : ''}</div>`;
+}
+function srchRender(){
+  const input = srchEl('srchInput'), panel = srchEl('srchPanel'), sugg = srchEl('srchSuggest'), list = srchEl('srchList');
+  const hasQ = SRCH.tokens.length > 0, hasF = srchHasFilters();
+  srchEl('srchClear').hidden = !(SRCH.q || hasF);
+  srchUpdateStatus();
+  if(!hasQ && !hasF){ panel.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); sugg.hidden = false; srchRenderSuggest(); return; }
+  sugg.hidden = true; panel.hidden = false; input.setAttribute('aria-expanded', 'true');
+  list.classList.remove('is-empty');
+  if(!SRCH.idx || !srchNamesReady() || !CURRENT_SURVEY.length){
+    srchEl('srchSummary').innerHTML = ''; srchEl('srchFilters').innerHTML = ''; srchEl('srchResultBar').innerHTML = ''; srchEl('srchMore').innerHTML = '';
+    list.innerHTML = '<div class="skel"><div></div><div></div><div></div><div></div></div>'; return;
+  }
+  srchRenderFilters();
+  if(SRCH.short){ srchEl('srchSummary').innerHTML = ''; srchEl('srchResultBar').innerHTML = ''; srchEl('srchMore').innerHTML = ''; list.innerHTML = '<div class="srch-empty"><h4>Keep typing…</h4><p>Enter at least 2 characters, or pick a filter above.</p></div>'; list.classList.add('is-empty'); return; }
+  const st = SRCH.stats, total = st ? st.total : 0;
+  srchRenderSummary(st);
+  if(!total){ srchEl('srchResultBar').innerHTML = ''; srchEl('srchMore').innerHTML = ''; list.innerHTML = srchEmptyHTML(); list.classList.add('is-empty'); return; }
+  const shown = Math.min(SRCH.shown, SRCH.order.length, SRCH_CAP);
+  const sortSel = `<select id="srchSort" aria-label="Sort results">${[['auto', hasQ ? 'Best match' : 'Newest first'], ['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A–Z']].filter((o, k, a) => !(o[0] !== 'auto' && o[1] === a[0][1])).map(([v, l]) => `<option value="${v}"${SRCH.sort === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+  srchEl('srchResultBar').innerHTML = `<span>Showing <b>${fmt(shown)}</b> of <b>${fmt(total)}</b> matching restaurant${total === 1 ? '' : 's'}</span>${sortSel}`;
+  list.innerHTML = SRCH.order.slice(0, shown).map((i, pos) => srchItemHTML(i, pos, SRCH.tokens)).join('');
+  const more = srchEl('srchMore');
+  if(shown < SRCH.order.length && shown < SRCH_CAP) more.innerHTML = `<button type="button" data-more="1">Show ${Math.min(SRCH_PAGE, Math.min(SRCH.order.length, SRCH_CAP) - shown)} more</button>`;
+  else if(SRCH.order.length > SRCH_CAP) more.innerHTML = `<div class="note">Showing the top ${fmt(SRCH_CAP)} of ${fmt(SRCH.order.length)} — type more of the name or add a filter to narrow it down.</div>`;
+  else more.innerHTML = '';
+}
+
+// ---------------------------------------------------------------- running a search
+function srchSchedule(ms){ clearTimeout(SRCH.timer); SRCH.timer = setTimeout(srchRun, ms); }
+function srchRun(){
+  clearTimeout(SRCH.timer); SRCH.timer = null;
+  SRCH.tokens = srchTokens(SRCH.q);
+  const hasQ = SRCH.tokens.length > 0, hasF = srchHasFilters();
+  SRCH.short = false; SRCH.help = null;
+  if(!hasQ && !hasF){ SRCH.order = []; SRCH.stats = null; srchRender(); return; }
+  if(!srchReadySync()){ if(CURRENT_SURVEY.length) ensureNames(); srchRender(); return; }
+  if(hasQ && SRCH.tokens.length === 1 && SRCH.tokens[0].length < 2 && !hasF){ SRCH.short = true; SRCH.order = []; SRCH.stats = null; srchRender(); return; }
+  const res = srchCompute(SRCH.tokens);
+  SRCH.stats = res.stats; SRCH.order = srchOrder(res, SRCH.sort, hasQ);
+  SRCH.shown = SRCH_PAGE; SRCH.active = -1;
+  if(!res.ids.length && hasQ) SRCH.help = srchHelp(SRCH.tokens);
+  srchRender();
+}
+function srchRemember(q){
+  q = String(q || '').trim(); if(q.length < 2) return;
+  SRCH.recent = [q].concat(SRCH.recent.filter(x => x.toLowerCase() !== q.toLowerCase())).slice(0, 6);
+  try{ localStorage.setItem('srchRecentV1', JSON.stringify(SRCH.recent)); }catch(e){}
+}
+function srchSetQuery(q, commit){ SRCH.q = q; srchEl('srchInput').value = q; srchRun(); if(commit) srchRemember(q); }
+function srchResetFilters(){ SRCH.city = SRCH.status = SRCH.bucket = SRCH.sw = SRCH.plat = 'ALL'; }
+
+// called by the data loader
+function srchDataChanged(){
+  clearTimeout(SRCH.preTimer); SRCH.idx = null; srchCloseProfile(true);
+  srchUpdateStatus();
+  if(SRCH.tokens.length || srchHasFilters()) srchSchedule(0); else if(srchNamesReady()) srchPrebuild();
+}
+function srchNamesProgress(){ srchUpdateStatus(); }
+function srchPrebuild(){                                   // prepare the index in small slices while nobody is typing
+  clearTimeout(SRCH.preTimer);
+  const tick = () => {
+    if(!srchNamesReady() || !CURRENT_SURVEY.length) return;
+    if(srchIndexStale()) SRCH.idx = srchIndexInit();
+    const idx = SRCH.idx, SLICE = 5000;
+    if(!idx.done){ srchIndexStep(idx, idx.filled + SLICE); SRCH.preTimer = setTimeout(tick, 6); }
+    else if(idx.dupFilled < idx.n){ if(!idx.dup) idx.dup = new Map(); srchDupStep(idx, idx.dupFilled + SLICE * 2); SRCH.preTimer = setTimeout(tick, 6); }
+  };
+  SRCH.preTimer = setTimeout(tick, 40);
+}
+function srchNamesSettled(){ srchUpdateStatus(); if(SRCH.q || srchHasFilters()) srchSchedule(0); else srchPrebuild(); }
+
+// ---------------------------------------------------------------- keyboard / list navigation
+function srchMove(d){
+  const count = Math.min(SRCH.shown, SRCH.order.length, SRCH_CAP);
+  if(!count) return;
+  SRCH.active = SRCH.active < 0 ? (d > 0 ? 0 : count - 1) : Math.max(0, Math.min(count - 1, SRCH.active + d));
+  const input = srchEl('srchInput');
+  srchEl('srchList').querySelectorAll('.srch-item').forEach((el, k) => { const on = k === SRCH.active; el.classList.toggle('active', on); el.setAttribute('aria-selected', String(on)); if(on){ input.setAttribute('aria-activedescendant', el.id); if(el.scrollIntoView) el.scrollIntoView({ block:'nearest' }); } });
+}
+
+// ---------------------------------------------------------------- the restaurant profile
+function srchProfileHTML(i){
+  const idx = SRCH.idx, r = idx.rows[i], name = srchRowName(r) || '(no name recorded)', city = idx.cityOf[i];
+  const status = srchStatusOf(r), bucket = classifySoftware(r['Ex Software']), av = srchAvatar(name, city), row = srchSheetRow(i);
+  const dups = srchDupGroup(i), ctx = srchCityContext(city), pos = SRCH.order.indexOf(i);
+  const rawRegion = String(r['Region'] == null ? '' : r['Region']).trim();
+  const banner = status === 'yes' ? ['yes', '✓', 'Available', 'This restaurant is marked Available in the survey.']
+    : status === 'no' ? ['no', '✕', 'Not available', 'This restaurant is marked Not available in the survey.'] : ['na', '?', 'No answer recorded', 'The survey has no Yes / No availability for this restaurant.'];
+  const day = idx.dayOf[i], ago = srchDaysAgo(day);
+  const same = dups.length > 1, statuses = new Set(dups.map(k => srchStatusOf(idx.rows[k]))), conflict = same && statuses.size > 1;
+  const dupList = same ? `<div class="rp-h">Surveyed ${dups.length} times</div>${conflict ? '<div class="rp-warn">⚠ These records disagree on availability — worth a QC look.</div>' : ''}<div class="rp-dup">${dups.slice().sort((a, b) => (idx.dayOf[b] || '').localeCompare(idx.dayOf[a] || '') || b - a).map(k => { const rr = idx.rows[k], s = srchStatusOf(rr);
+      return `<button type="button" data-open="${k}" class="${k === i ? 'cur' : ''}"${k === i ? ' aria-current="true"' : ''}><span>${esc(srchDateText(idx.dayOf[k]))}${srchSheetRow(k) ? ` · Row ${fmt(srchSheetRow(k))}` : ''}</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${s === 'yes' ? 'yes' : s === 'no' ? 'no' : 'na'}">${s === 'yes' ? 'Available' : s === 'no' ? 'Not available' : 'No answer'}</span><span class="swchip" style="--c:${METRIC_COLORS[classifySoftware(rr['Ex Software'])]}">${esc(srchSwText(rr))}</span></span></button>`; }).join('')}</div>` : '';
+  const ctxHtml = ctx ? `<div class="rp-h">How ${esc(city)} looks overall</div><div class="rp-ctx"><b>${fmt(ctx.n)}</b> restaurants surveyed · <b>${pct(ctx.yes, ctx.n)}%</b> available. Of the ${fmt(ctx.yes)} available, <b>${pct(ctx.pp, ctx.yes)}%</b> use Petpooja and <b>${pct(ctx.manual, ctx.yes)}%</b> are still on manual / offline billing.</div>` : '';
+  const sheetUrl = row ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${(LAST_PAYLOAD && LAST_PAYLOAD.sources && LAST_PAYLOAD.sources.survey && LAST_PAYLOAD.sources.survey.id) || GIDS.survey}&range=A${row}` : '';
+  return `<div class="rp-head">
+      <div class="rp-top"><div class="rp-nav"><button type="button" class="rp-btn" data-nav="-1" aria-label="Previous result"${pos <= 0 ? ' disabled' : ''}>‹</button><button type="button" class="rp-btn" data-nav="1" aria-label="Next result"${pos < 0 || pos >= SRCH.order.length - 1 ? ' disabled' : ''}>›</button>${pos >= 0 ? `<span>${fmt(pos + 1)} of ${fmt(SRCH.order.length)}</span>` : ''}</div><button type="button" class="rp-btn" data-close="1" aria-label="Close profile">✕</button></div>
+      <div class="rp-id"><div class="rp-av" style="background:${av.color}" aria-hidden="true">${esc(av.ini)}</div><div><h3 class="rp-title" id="rpTitle">${esc(name)}</h3><div class="rp-sub">${esc(city)}${rawRegion && rawRegion !== city ? ` · listed as “${esc(rawRegion)}”` : ''}</div></div></div>
+    </div>
+    <div class="rp-body">
+      <div class="rp-status ${banner[0]}"><div class="ic" aria-hidden="true">${banner[1]}</div><div><h4>${banner[2]}</h4><p>${banner[3]}</p></div></div>
+      <div class="rp-h">Survey collection summary</div>
+      <div class="rp-grid">
+        <div class="rp-fact wide"><div class="k">Billing software</div><div class="v"><i style="background:${METRIC_COLORS[bucket]}"></i>${esc(srchSwText(r))} <small>${BUCKET_LABEL[bucket]}</small></div></div>
+        <div class="rp-fact"><div class="k">Zomato</div><div class="v">${esc(srchPlatText(r['Zomato Live']))}</div></div>
+        <div class="rp-fact"><div class="k">Swiggy</div><div class="v">${esc(srchPlatText(r['Swiggy Live']))}</div></div>
+        <div class="rp-fact"><div class="k">Surveyed on</div><div class="v">${esc(srchDateText(day))}${ago ? ` <small>${ago}</small>` : ''}</div></div>
+        <div class="rp-fact"><div class="k">Sheet row</div><div class="v">${row ? fmt(row) : '—'}</div></div>
+      </div>
+      ${dupList}${ctxHtml}
+    </div>
+    <div class="rp-foot"><button type="button" class="btn primary" data-copy="${i}">⧉ Copy summary</button>${sheetUrl ? `<a class="btn" href="${esc(sheetUrl)}" target="_blank" rel="noopener">↗ Open in sheet</a>` : ''}<button type="button" class="btn" data-city="${esc(city)}">More in ${esc(city)}</button></div>`;
+}
+function srchSummaryText(i){
+  const idx = SRCH.idx, r = idx.rows[i], row = srchSheetRow(i), st = srchStatusOf(r);
+  return [`${srchRowName(r) || '(no name recorded)'} — ${idx.cityOf[i]}`, `Status: ${st === 'yes' ? 'Available' : st === 'no' ? 'Not available' : 'No answer'}`,
+    `Billing software: ${srchSwText(r)} (${BUCKET_LABEL[classifySoftware(r['Ex Software'])]})`, `Zomato: ${srchPlatText(r['Zomato Live'])} · Swiggy: ${srchPlatText(r['Swiggy Live'])}`,
+    `Surveyed: ${srchDateText(idx.dayOf[i])}`, row ? `Sheet row: ${row}` : null].filter(Boolean).join('\n');
+}
+function srchOpenProfile(i){
+  if(!SRCH.idx || i < 0 || i >= SRCH.idx.n) return;
+  const d = srchEl('rp'), bd = srchEl('rpBackdrop'), wasOpen = SRCH.profileI >= 0;
+  clearTimeout(SRCH.closeTimer);
+  if(!wasOpen) SRCH.lastFocus = document.activeElement;
+  SRCH.profileI = i;
+  srchEl('rpInner').innerHTML = srchProfileHTML(i);
+  d.hidden = false; bd.hidden = false; d.setAttribute('aria-hidden', 'false');
+  void d.offsetWidth; d.classList.add('open'); bd.classList.add('open');
+  document.documentElement.classList.add('rp-lock');
+  const first = d.querySelector('[data-close]'); if(first && !wasOpen) first.focus();
+  srchRemember(SRCH.q);
+  d.scrollTop = 0;
+}
+function srchCloseProfile(immediate){
+  if(SRCH.profileI < 0) return;
+  const d = srchEl('rp'), bd = srchEl('rpBackdrop');
+  SRCH.profileI = -1;
+  d.classList.remove('open'); bd.classList.remove('open'); d.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('rp-lock');
+  const done = () => { if(SRCH.profileI < 0){ d.hidden = true; bd.hidden = true; } };
+  if(immediate) done(); else SRCH.closeTimer = setTimeout(done, 320);
+  const f = SRCH.lastFocus; SRCH.lastFocus = null;
+  if(f && f.focus && document.contains(f)) f.focus();
+}
+function srchCopy(text){
+  const ok = () => toast('Restaurant summary copied to the clipboard.');
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(ok, () => srchCopyFallback(text, ok)); }
+  else srchCopyFallback(text, ok);
+}
+function srchCopyFallback(text, ok){
+  try{ const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;left:-9999px;top:0;'; document.body.appendChild(t); t.select(); const done = document.execCommand && document.execCommand('copy'); document.body.removeChild(t); if(done) ok(); else toast('Could not copy automatically — select the text and copy it.', 'warn'); }
+  catch(e){ toast('Could not copy automatically — select the text and copy it.', 'warn'); }
+}
+
+// ---------------------------------------------------------------- wiring
+function srchInit(){
+  const input = srchEl('srchInput');
+  if(!input) return;
+  try{ SRCH.recent = (JSON.parse(localStorage.getItem('srchRecentV1') || '[]') || []).filter(x => typeof x === 'string').slice(0, 6); }catch(e){ SRCH.recent = []; }
+  const warm = () => { if(CURRENT_SURVEY.length && !srchNamesReady()){ ensureNames(); srchUpdateStatus(); } };
+  input.addEventListener('focus', warm);
+  input.addEventListener('input', () => { SRCH.q = input.value; srchEl('srchClear').hidden = !(SRCH.q || srchHasFilters()); warm(); srchSchedule(110); });
+  input.addEventListener('keydown', e => {
+    if(e.key === 'ArrowDown'){ e.preventDefault(); srchMove(1); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); srchMove(-1); }
+    else if(e.key === 'Enter'){ e.preventDefault(); if(SRCH.active >= 0 && SRCH.order[SRCH.active] !== undefined) srchOpenProfile(SRCH.order[SRCH.active]); else { srchRun(); srchRemember(SRCH.q); } }
+    else if(e.key === 'Escape'){ if(SRCH.profileI >= 0) srchCloseProfile(); else if(SRCH.q || srchHasFilters()){ SRCH.q = ''; input.value = ''; srchResetFilters(); srchRun(); } else input.blur(); }
+  });
+  srchEl('srchGo').addEventListener('click', () => { warm(); srchRun(); srchRemember(SRCH.q); input.focus(); });
+  srchEl('srchClear').addEventListener('click', () => { SRCH.q = ''; input.value = ''; srchResetFilters(); srchRun(); input.focus(); });
+  const root = srchEl('srch');
+  root.addEventListener('click', e => {
+    const t = e.target.closest('[data-q],[data-preset],[data-f],.srch-item,[data-more],[data-fixq],[data-retry],[data-reset]');
+    if(!t || !root.contains(t)) return;
+    if(t.dataset.q !== undefined){ srchSetQuery(t.dataset.q, true); }
+    else if(t.dataset.preset){ const p = SRCH_PRESETS.find(x => x.id === t.dataset.preset); srchResetFilters(); Object.assign(SRCH, p.set); SRCH.q = ''; input.value = ''; warm(); srchRun(); }
+    else if(t.dataset.f){ SRCH[t.dataset.f] = t.dataset.v; warm(); srchRun(); }
+    else if(t.classList.contains('srch-item')){ SRCH.active = +t.id.replace('srchOpt-', ''); srchOpenProfile(+t.dataset.i); }
+    else if(t.dataset.more){ SRCH.shown = Math.min(SRCH.shown + SRCH_PAGE, SRCH_CAP); srchRender(); }
+    else if(t.dataset.fixq !== undefined){ srchSetQuery(t.dataset.fixq, true); }
+    else if(t.dataset.retry){ NAMES_FAILED = false; ensureNames(); srchUpdateStatus(); }
+    else if(t.dataset.reset){ srchResetFilters(); srchRun(); }
+  });
+  root.addEventListener('change', e => {
+    if(e.target.id === 'srchCity'){ SRCH.city = e.target.value; srchRun(); }
+    else if(e.target.id === 'srchSw'){ SRCH.sw = e.target.value; srchRun(); }
+    else if(e.target.id === 'srchSort'){ SRCH.sort = e.target.value; const keep = SRCH.shown; srchRun(); SRCH.shown = keep; srchRender(); }
+  });
+  const rp = srchEl('rp');
+  rp.addEventListener('click', e => {
+    const t = e.target.closest('[data-close],[data-nav],[data-open],[data-copy],[data-city]');
+    if(!t) return;
+    if(t.dataset.close !== undefined) srchCloseProfile();
+    else if(t.dataset.nav){ const pos = SRCH.order.indexOf(SRCH.profileI) + (+t.dataset.nav); if(SRCH.order[pos] !== undefined) srchOpenProfile(SRCH.order[pos]); }
+    else if(t.dataset.open !== undefined){ if(+t.dataset.open !== SRCH.profileI) srchOpenProfile(+t.dataset.open); }
+    else if(t.dataset.copy !== undefined) srchCopy(srchSummaryText(+t.dataset.copy));
+    else if(t.dataset.city !== undefined){ const c = t.dataset.city; srchCloseProfile(); srchResetFilters(); SRCH.city = c; SRCH.q = ''; input.value = ''; srchRun(); srchEl('srch').scrollIntoView && srchEl('srch').scrollIntoView({ block:'start' }); }
+  });
+  rp.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){ e.stopPropagation(); srchCloseProfile(); }
+    else if(e.key === 'Tab'){ const f = [...rp.querySelectorAll('button:not([disabled]), a[href]')]; if(!f.length) return; const a = f[0], z = f[f.length - 1]; if(e.shiftKey && document.activeElement === a){ e.preventDefault(); z.focus(); } else if(!e.shiftKey && document.activeElement === z){ e.preventDefault(); a.focus(); } }
+    else if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){ const pos = SRCH.order.indexOf(SRCH.profileI) + (e.key === 'ArrowRight' ? 1 : -1); if(SRCH.order[pos] !== undefined){ e.preventDefault(); srchOpenProfile(SRCH.order[pos]); } }
+  });
+  srchEl('rpBackdrop').addEventListener('click', () => srchCloseProfile());
+  document.addEventListener('keydown', e => {
+    const tg = e.target, typing = tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' || tg.isContentEditable);
+    if((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')){ e.preventDefault(); input.focus(); input.select(); }
+    else if(e.key === 'Escape' && SRCH.profileI >= 0 && !srchEl('rp').contains(tg)) srchCloseProfile();
+  });
+  srchRenderSuggest(); srchUpdateStatus();
 }
 
 const _tick = () => new Promise(r => setTimeout(r, 0));
@@ -3505,6 +4234,7 @@ function stopLoadTicker(){ if(LOAD_TICK){ clearInterval(LOAD_TICK); LOAD_TICK = 
 // Paint the page in stages so the top of the dashboard appears first, while the
 // heavier sections are still being worked out underneath.
 async function renderAll(survey, rest){
+  CURRENT_SURVEY = survey; srchDataChanged();                 // the search always covers the survey now on screen
   buildKpis(survey, rest);
   renderDataThrough(survey, rest);
   buildTicker(survey, rest);
@@ -3739,6 +4469,7 @@ document.querySelectorAll('.qa-tab').forEach(btn => {
   });
 });
 
+srchInit();
 loadAll(false);
 setInterval(() => { if(!document.hidden) loadAll(false); }, REFRESH_MS);
 document.addEventListener('visibilitychange', () => {
