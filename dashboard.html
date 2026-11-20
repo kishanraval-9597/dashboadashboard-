@@ -10,8 +10,14 @@
 (function(){
   try{
     var c = new URLSearchParams(location.search).get('company') || 'ALL';
+    var t0 = performance.now();
+    var meta = function(r){ return { status:r.status, cache:(r.headers && r.headers.get('x-vercel-cache')) || '', age:(r.headers && r.headers.get('age')) || '', ms:Math.round(performance.now()-t0) }; };
     var p = fetch('/api/dashboard-data?company=' + encodeURIComponent(c))
-      .then(function(r){ return r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)); });
+      .then(function(r){
+        var m = meta(r);
+        if(r.ok) return r.text().then(function(text){ return { text:text, meta:m }; });
+        return r.text().then(function(body){ var e = new Error('HTTP ' + r.status); e.httpStatus = r.status; e.body = String(body).slice(0, 400); e.meta = m; throw e; });
+      });
     p.catch(function(){});
     window.__early = { company: c, p: p };
   }catch(e){}
@@ -1026,6 +1032,16 @@
   .dc-cols{ display:flex; flex-wrap:wrap; gap:6px; }
   .dc-cols .dc-code{ white-space:nowrap; }
   .dc-code{ font-family:'JetBrains Mono',monospace; background:var(--brand-tint); border-radius:4px; padding:1px 6px; word-break:break-all; }
+  .dot.warn{ background:#C8883A; }
+  .warn-banner{ background:#FBF1DC; border:1px solid #E3C98C; color:#5C4310; border-radius:10px; padding:12px 16px; margin:0 0 14px; font-size:13.5px; line-height:1.5; }
+  .warn-banner div + div{ margin-top:6px; }
+  .toast{ position:fixed; left:50%; bottom:22px; transform:translate(-50%, 24px); width:max-content; max-width:min(640px, calc(100vw - 28px)); background:#211E1A; color:#fff; padding:13px 18px; border-radius:12px; font-size:13.5px; line-height:1.45; box-shadow:0 10px 30px rgba(0,0,0,.28); opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50; }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
+  .toast.err{ background:#7A2E22; } .toast.warn{ background:#6B4A10; }
+  #refreshBtn{ background:var(--card); color:var(--ink); border:1px solid var(--line); font-family:'Inter',sans-serif; font-weight:600; font-size:14px; padding:9px 16px; border-radius:10px; cursor:pointer; box-shadow:0 1px 2px rgba(33,30,26,.06); }
+  #refreshBtn:hover{ background:var(--brand-tint); }
+  #refreshBtn:focus-visible{ outline:3px solid var(--brand); outline-offset:2px; }
+  #refreshBtn[disabled]{ opacity:.6; cursor:progress; }
   .loading-card{ display:flex; align-items:center; gap:18px; width:100%; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 26px; box-shadow:0 2px 4px rgba(33,30,26,.07), 0 10px 24px rgba(33,30,26,.08); }
   .loading-title{ font-family:'Fraunces',serif; font-weight:600; font-size:20px; color:var(--ink); }
   .loading-note{ font-size:13.5px; color:var(--ink-soft); margin-top:4px; line-height:1.5; }
@@ -1346,6 +1362,7 @@
         <span class="dot loading" id="statusDot"></span>
         <span id="statusText">Loading data…</span>
       </div>
+      <button type="button" id="refreshBtn" class="secondary-btn" title="Fetch the newest data from the sheet right now">↻ Refresh data</button>
     </div>
   </header>
 
@@ -1381,6 +1398,7 @@
   </div>
 
   <div class="err-banner" id="errBanner"></div>
+  <div class="warn-banner" id="dataWarn" role="alert" style="display:none;"></div>
 
   <div class="ticker-wrap">
     <div class="ticker" id="tickerEl"><span>Waiting on live feed…</span></div>
@@ -1483,6 +1501,11 @@
       <table class="excel-table" id="leadsByCity"></table>
     </div>
   </div>
+
+  <details class="date-check" id="dataStatus">
+    <summary>Data service details <span>— how old this data is and what the last check did</span></summary>
+    <div id="dataStatusBody" style="padding:2px 14px 14px;font-size:12.5px;"></div>
+  </details>
 
   <footer>
     <span>Source: published Google Sheet tabs (Survey Data · New Restaurant Data)</span>
@@ -3324,12 +3347,41 @@ async function idbSet(key, val){
   }catch(e){ /* a full or blocked store must never break the dashboard */ }
 }
 
-function fetchPayloadText(){
+// Plain-words reason for a failed data request (the raw error pages are not readable to most people).
+function explainFetchError(status, body){
+  const b = String(body || '');
+  if(status === 504 || /FUNCTION_INVOCATION_TIMEOUT|timed out|time limit/i.test(b)) return 'the data service ran out of time while Google was preparing the sheet';
+  if(status === 413) return 'the sheet is too large for the fast data feed';
+  if(status === 404) return 'the data service is not installed (api/dashboard-data.js is missing)';
+  if(status === 502 || status === 500){
+    try{ const j = JSON.parse(b); if(j && j.error) return 'the data service reported: ' + j.error; }catch(e){}
+    return 'the data service hit an error (HTTP ' + status + ')';
+  }
+  return status ? 'the data service answered HTTP ' + status : 'the data service could not be reached (check the internet connection)';
+}
+function humanAge(ms){
+  const m = Math.round(ms / 60000);
+  if(m < 1) return 'under a minute';
+  if(m < 60) return m + (m === 1 ? ' minute' : ' minutes');
+  const h = Math.round(m / 60);
+  if(h < 48) return h + (h === 1 ? ' hour' : ' hours');
+  const d = Math.round(h / 24);
+  return d + ' days';
+}
+
+// Resolves to { text, meta } or rejects with an Error whose message says WHY.
+function fetchPayload(){
   const early = window.__early && window.__early.company === COMPANY && !FORCE_FRESH ? window.__early.p : null;
   window.__early = null;                       // the request started in <head> is used once
-  if(early) return early;
+  if(early) return early.catch(e => { throw Object.assign(new Error(explainFetchError(e.httpStatus, e.body)), { meta: e.meta }); });
+  const t0 = performance.now();
   const bust = FORCE_FRESH ? '&_=' + Date.now() : '';
-  return fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}${bust}`).then(r => r.ok ? r.text() : Promise.reject(new Error('Fast feed HTTP ' + r.status)));
+  return fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}${bust}`, FORCE_FRESH ? { cache: 'no-store' } : undefined).then(r => {
+    const h = r.headers && r.headers.get ? r.headers : null;
+    const meta = { status: r.status, cache: h ? (h.get('x-vercel-cache') || '') : '', age: h ? (h.get('age') || '') : '', ms: Math.round(performance.now() - t0) };
+    if(r.ok) return r.text().then(text => ({ text, meta }));
+    return r.text().then(body => { throw Object.assign(new Error(explainFetchError(r.status, body)), { meta }); }, () => { throw Object.assign(new Error(explainFetchError(r.status, '')), { meta }); });
+  }, () => { throw new Error(explainFetchError(0, '')); });
 }
 
 // ---- restaurant names: only needed for the drill-down lists, so they load separately
@@ -3364,6 +3416,69 @@ function prefetchNamesWhenIdle(){
 }
 
 const _tick = () => new Promise(r => setTimeout(r, 0));
+
+function renderWarnings(list){
+  const el = document.getElementById('dataWarn');
+  if(!el) return;
+  if(!list || !list.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = list.map(w => `<div>⚠ ${esc(w)}</div>`).join('');
+}
+// "0 surveys" is never a believable answer for the all-companies view: it means the survey tab was not read.
+const ZERO_SURVEY_MSG = 'The survey tab returned 0 rows, so the dashboard did not use this copy. Check that the “Survey Data” tab still exists and has its header row.';
+
+let LAST_FETCH = null;            // what the most recent data check did: { at, ok, message, cache, age, ms }
+let TOAST_TIMER = null, MANUAL_REFRESH = false, REFRESHING = false;
+function toast(msg, kind){
+  let t = document.getElementById('toast');
+  if(!t){ t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); document.body.appendChild(t); }
+  t.className = 'toast show ' + (kind || '');
+  t.textContent = msg;
+  clearTimeout(TOAST_TIMER);
+  TOAST_TIMER = setTimeout(() => { t.className = 'toast'; }, kind === 'err' ? 14000 : 8000);
+}
+const _fdate = t => t ? new Date(t).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
+const _fwhen = t => t ? new Date(t).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+
+function renderDataStatus(){
+  const el = document.getElementById('dataStatusBody');
+  if(!el) return;
+  const P = LAST_PAYLOAD, F = LAST_FETCH, rows = [];
+  const add = (k, v, bad) => rows.push(`<tr${bad ? ' class="nodate"' : ''}><td>${esc(k)}</td><td style="text-align:left;font-family:'Inter',sans-serif;">${v}</td></tr>`);
+  if(P){
+    const age = Date.now() - new Date(P.generatedAt).getTime();
+    add('Data was built by the server at', `${esc(_fwhen(P.generatedAt))} (${esc(humanAge(age))} ago)`, age > 30 * 60000);
+    add('Survey rows in this copy', fmt(P.n));
+    add('Latest survey date in the data', DATE_DIAG && DATE_DIAG.latest ? esc(_fdate(DATE_DIAG.latest)) : '—');
+    add('Sheet was read as', P.readAs === 'csv' ? 'the sheet’s own text (exact)' : P.readAs === 'gviz' ? 'Google’s query API (typed dates can be missing)' : esc(P.readAs || '—'), P.readAs === 'gviz');
+    if(P.timing) add('Time the server needed', `${(P.timing.surveyMs / 1000).toFixed(1)} s to read the survey tab · ${(P.timing.totalMs / 1000).toFixed(1)} s in total`);
+    if(P.sources && P.sources.survey){
+      const sv = P.sources.survey, rs = P.sources.restaurant || {};
+      add('Survey tab', `${esc(sv.tab || '—')} (tab id ${esc(sv.id || '—')}) — ${fmt(sv.rows)} rows, read via ${sv.via === 'csv' ? 'the sheet’s text' : 'Google’s query API'}`);
+      add('Restaurant-leads tab', rs.failed ? '<b>could not be read</b>' : `${esc(rs.tab || '—')} (tab id ${esc(rs.id || '—')}) — ${fmt(rs.rows)} rows`, !!rs.failed);
+    }
+    if(P.warnings && P.warnings.length) add('Warnings', P.warnings.map(esc).join('<br>'), true);
+    add('Data version', `<span class="dc-code">${esc(P.v)}</span>`);
+  } else {
+    add('Data source', 'read directly from Google (slower mode — the fast data feed is not in use)');
+  }
+  if(F){
+    add('Last check', `${esc(_fwhen(F.at))} — ${F.ok ? 'worked' : '<b>failed:</b> ' + esc(F.message)}`, !F.ok);
+    if(F.cache || F.age !== '') add('Answered by', esc((F.cache || 'the server') + (F.age !== '' ? ' · that copy was ' + F.age + ' s old' : '') + (F.ms ? ' · ' + F.ms + ' ms' : '')));
+  }
+  el.innerHTML = `<div class="dc-scroll"><table class="dc-table"><tbody>${rows.join('')}</tbody></table></div>`;
+}
+
+// One click: bypass every cache between the page and the sheet and say plainly what happened.
+async function refreshNow(){
+  if(REFRESHING) return;
+  REFRESHING = true;
+  const btn = document.getElementById('refreshBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '↻ Refreshing…'; }
+  FORCE_FRESH = true; STALE_RETRIES = 0; MANUAL_REFRESH = true;
+  try{ await loadAll(true); }
+  finally { REFRESHING = false; if(btn){ btn.disabled = false; btn.textContent = '↻ Refresh data'; } }
+}
 
 // While the very first load is running, say what is happening — and how long it might take — instead of
 // leaving a hollow page. Stops by itself as soon as the loading card is replaced by real data.
@@ -3406,7 +3521,7 @@ async function renderAll(survey, rest){
 
 function setStatus(kind, msg){
   const dot = document.getElementById('statusDot'), text = document.getElementById('statusText'), brand = document.getElementById('brandMark');
-  dot.className = kind === 'err' ? 'dot err' : kind === 'loading' ? 'dot loading' : 'dot';
+  dot.className = kind === 'err' ? 'dot err' : kind === 'loading' ? 'dot loading' : kind === 'warn' ? 'dot warn' : 'dot';
   if(brand) brand.classList.toggle('refreshing', kind === 'loading');
   text.textContent = msg;
 }
@@ -3422,6 +3537,8 @@ async function loadDirect(){
   if(!survey.length && !rest.length){
     throw new Error('No rows matched — check the company name matches what appears in Employee Name, or use company=ALL.');
   }
+  if(!survey.length && COMPANY.toUpperCase() === 'ALL') throw new Error(ZERO_SURVEY_MSG);
+  renderWarnings([]);
   LAST_PAYLOAD = null; LOADED_V = null; NAMES = null; SHEET_COLUMNS = null;
   detectDateOrder(survey);
   await renderAll(survey, rest);
@@ -3442,8 +3559,11 @@ async function loadAll(isManual){
     setStatus('loading', FIRST_LOAD ? 'Loading…' : 'Refreshing…');
     if(FIRST_LOAD) startLoadTicker();
 
+    const manual = MANUAL_REFRESH; MANUAL_REFRESH = false;
+    const beforeV = LOADED_V;
+
     // 1) start the network request straight away
-    const netP = fetchPayloadText();
+    const netP = fetchPayload();
     netP.catch(() => {});
 
     // 2) meanwhile, paint the copy saved by the last visit (if there is one)
@@ -3453,10 +3573,12 @@ async function loadAll(isManual){
       if(cached && cached.text){
         try{
           const p = JSON.parse(cached.text), d = decodePayload(p);
+          if(!d.survey.length && COMPANY.toUpperCase() === 'ALL') throw new Error('saved copy has no survey rows');
           setDateOrder(d.dateOrder);
           if(COMPANY.toUpperCase() === 'ALL') populateCompanySelectFrom(new Set(d.companies));
           LAST_PAYLOAD = p; LOADED_V = p.v; SHEET_COLUMNS = p.sheetColumns || null;
           await renderAll(d.survey, d.rest);
+          renderWarnings(p.warnings);
           shownFromCache = true;
           setStatus('loading', 'Showing saved data from ' + fmtClock(p.generatedAt) + ' — checking for updates…');
         }catch(e){ shownFromCache = false; LOADED_V = null; LAST_PAYLOAD = null; }
@@ -3465,17 +3587,32 @@ async function loadAll(isManual){
     FIRST_LOAD = false;
 
     // 3) the fresh copy — only a failed DOWNLOAD may trigger the fallbacks below
-    let text = null, p = null;
-    try{ text = await netP; p = JSON.parse(text); }catch(fastErr){ p = null; }
+    let text = null, p = null, meta = null, fastErr = null;
+    try{ const res = await netP; text = res.text; meta = res.meta; p = JSON.parse(text); }
+    catch(e){ p = null; fastErr = e; if(e && e.meta) meta = e.meta; }
     if(seq !== LOAD_SEQ) return;                            // a newer load took over
+    LAST_FETCH = { at: Date.now(), ok: !!p, message: p ? '' : (fastErr && fastErr.message) || 'unknown problem',
+                   cache: (meta && meta.cache) || '', age: meta && meta.age !== undefined ? meta.age : '', ms: (meta && meta.ms) || 0 };
 
     if(!p){
-      if(shownFromCache){
-        setStatus('err', 'Offline — showing saved data');
-        document.getElementById('lastUpdated').textContent = 'Showing saved data from ' + fmtClock(LAST_PAYLOAD.generatedAt);
+      if(LAST_PAYLOAD){
+        // Data is already on screen (saved copy or an earlier successful check): keep it — do NOT swap it for the
+        // slower direct read — and say plainly why the newest data could not be fetched.
+        const from = fmtClock(LAST_PAYLOAD.generatedAt);
+        const why = LAST_FETCH.message;
+        setStatus('err', shownFromCache && !manual ? 'Offline — showing saved data' : `Couldn’t refresh — showing data from ${from}`);
+        document.getElementById('lastUpdated').textContent = `Showing data from ${from} — could not fetch newer: ${why}`;
+        if(manual) toast(`Couldn’t refresh: ${why}. Still showing data from ${from} (${humanAge(Date.now() - new Date(LAST_PAYLOAD.generatedAt).getTime())} old).`, 'err');
+        renderDataStatus();
         return;
       }
-      await loadDirect();
+      try{ await loadDirect(); }
+      catch(directErr){
+        // Both routes failed: lead with the data service's own reason (it is the specific one).
+        const why = String(LAST_FETCH.message || '').replace(/^./, c => c.toUpperCase());
+        throw new Error(`${why}. Reading the sheet directly also failed: ${directErr.message || 'unknown problem'}`);
+      }
+      renderDataStatus();
       return;
     }
 
@@ -3484,6 +3621,12 @@ async function loadAll(isManual){
       if(!d.survey.length && !d.rest.length){
         throw new Error('No rows matched — check the company name matches what appears in Employee Name, or use company=ALL.');
       }
+      if(!d.survey.length && COMPANY.toUpperCase() === 'ALL'){
+        LAST_FETCH = { at: Date.now(), ok: false, message: ZERO_SURVEY_MSG, cache: LAST_FETCH ? LAST_FETCH.cache : '', age: '', ms: 0 };
+        FORCE_FRESH = false;
+        if(LAST_PAYLOAD){ setStatus('err', 'Couldn’t refresh — showing data from ' + fmtClock(LAST_PAYLOAD.generatedAt)); if(manual) toast(ZERO_SURVEY_MSG, 'err'); renderDataStatus(); return; }
+        throw new Error(ZERO_SURVEY_MSG);
+      }
       setDateOrder(d.dateOrder);
       if(COMPANY.toUpperCase() === 'ALL') populateCompanySelectFrom(new Set(d.companies));
       if(LAST_PAYLOAD && LAST_PAYLOAD.v !== p.v){ NAMES = null; NAMES_PROMISE = null; NAMES_FAILED = false; }
@@ -3491,33 +3634,50 @@ async function loadAll(isManual){
       await renderAll(d.survey, d.rest);
       idbSet('data:' + COMPANY, { text, savedAt: Date.now() });
     }
+    renderWarnings(p.warnings);
+    const wasForced = FORCE_FRESH;
     FORCE_FRESH = false;
     LAST_OK_AT = Date.now();
-    setStatus('ok', 'Live');
+    const ageMs = Date.now() - new Date(p.generatedAt).getTime();
+    // "Live" only means something if the data really is recent.
+    if(ageMs > 30 * 60 * 1000) setStatus('warn', 'Data is ' + humanAge(ageMs) + ' old');
+    else setStatus('ok', 'Live');
     document.getElementById('lastUpdated').textContent = 'Data as of ' + fmtClock(p.generatedAt);
     prefetchNamesWhenIdle();
+    renderDataStatus();
 
-    // The CDN can hand out a copy that is a few minutes old (and, after a quiet spell, older still while it
-    // refreshes itself in the background). If so, quietly check again shortly — at most three times.
-    const ageMs = Date.now() - new Date(p.generatedAt).getTime();
+    if(manual){
+      const rows = fmt(p.n), latest = DATE_DIAG && DATE_DIAG.latest ? _fdate(DATE_DIAG.latest) : '—';
+      if(ageMs > 30 * 60 * 1000) toast(`The data service handed back a ${humanAge(ageMs)}-old copy and could not build a newer one. Showing ${rows} visits, latest survey ${latest}.`, 'warn');
+      else if(p.v !== beforeV) toast(`Updated — ${rows} visits, latest survey ${latest}.`);
+      else toast(`Already up to date — ${rows} visits, latest survey ${latest}.`);
+    }
+
+    // The CDN can hand out a copy that is a few minutes old. If so, check again shortly — at most three times,
+    // and from the second try onward bypassing the CDN's copy altogether.
     if(ageMs > 6 * 60 * 1000 && STALE_RETRIES < 3){
       const delays = window.__retryDelays || [8000, 15000, 30000];
       document.getElementById('lastUpdated').textContent = 'Data as of ' + fmtClock(p.generatedAt) + ' — checking for newer…';
-      setTimeout(() => loadAll(true), delays[STALE_RETRIES++]);
+      const nth = STALE_RETRIES++;
+      setTimeout(() => { if(nth >= 1) FORCE_FRESH = true; loadAll(true); }, delays[nth]);
     } else if(ageMs <= 6 * 60 * 1000){ STALE_RETRIES = 0; }
   } catch(err){
+    FORCE_FRESH = false;
     setStatus('err', 'Connection issue');
     const lc = document.getElementById('loadingCard');
     if(lc){ lc.innerHTML = '<div><div class="loading-title">The dashboard could not load its data</div><div class="loading-note">See the message below. It will try again automatically in a few minutes, or refresh this page.</div></div>'; }
     errBanner.style.display = 'block';
-    errBanner.innerHTML = `Couldn't load data (${esc(err.message || 'network error')}). ` +
-      `Please check your internet connection. It will retry automatically on the next auto-refresh.`;
+    errBanner.innerHTML = `Couldn't load data — ${esc((err.message || 'network error').slice(0, 700))} ` +
+      `It will retry automatically on the next auto-refresh, or use “Refresh data”.`;
+    renderDataStatus();
     console.error(err);
   } finally {
     if(seq === LOAD_SEQ){ LOADING = false; stopLoadTicker(); }
   }
 }
 
+
+document.getElementById('refreshBtn').addEventListener('click', refreshNow);
 
 // Visit-trend controls: Daily / Monthly switch and the city picker.
 document.querySelectorAll('.trend-seg-btn').forEach(btn => {
