@@ -1042,6 +1042,50 @@
   #refreshBtn:hover{ background:var(--brand-tint); }
   #refreshBtn:focus-visible{ outline:3px solid var(--brand); outline-offset:2px; }
   #refreshBtn[disabled]{ opacity:.6; cursor:progress; }
+  .rp-fact .v.addr{ display:block; font-weight:600; font-size:15px; line-height:1.5; }
+  .rp-fact .v.addr small{ font-weight:500; }
+  .rp-map{ display:inline-flex; align-items:center; gap:6px; margin-top:9px; font:700 13px 'Inter',sans-serif; color:var(--brand); text-decoration:none; border:1px solid var(--line); border-radius:9px; padding:6px 12px; background:#fff; }
+  .rp-map:hover{ background:var(--brand-tint); }
+  .addr-skel{ display:block; height:14px; width:72%; border-radius:6px; margin:4px 0 8px; background:linear-gradient(100deg,#EFEBE2 30%,#FAF8F3 50%,#EFEBE2 70%); background-size:200% 100%; animation:skel 1.2s linear infinite; }
+  .addr-err{ color:var(--brick); font-weight:600; }
+  .rp-retry{ border:0; background:none; color:var(--brand); font:700 13px 'Inter',sans-serif; text-decoration:underline; cursor:pointer; padding:0 0 0 6px; }
+  /* ---------- the Search button on the dashboard + the dedicated search window ---------- */
+  .search-open-btn{ display:inline-flex; align-items:center; gap:9px; border:0; background:var(--brand); color:#fff; font:700 14px 'Inter',sans-serif; padding:0 14px 0 15px; height:42px; border-radius:12px; cursor:pointer;
+    box-shadow:0 8px 18px -8px rgba(44,74,110,.7), 0 1px 0 rgba(255,255,255,.18) inset; transition:background .15s ease, transform .05s ease, box-shadow .15s ease; }
+  .search-open-btn:hover{ background:var(--brand-deep); box-shadow:0 10px 22px -8px rgba(44,74,110,.8), 0 1px 0 rgba(255,255,255,.18) inset; }
+  .search-open-btn:active{ transform:translateY(1px); }
+  .search-open-btn:focus-visible, .sw-close:focus-visible, .sw-link:focus-visible{ outline:3px solid #8FC1E8; outline-offset:2px; }
+  .search-open-btn kbd{ font:600 11px 'JetBrains Mono',monospace; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); border-radius:6px; padding:1px 7px; color:#fff; }
+  html.sw-lock{ overflow:hidden; }
+  .sw{ position:fixed; inset:0; z-index:70; background:var(--paper); display:flex; flex-direction:column; opacity:0; transform:translateY(12px) scale(.992);
+    transition:opacity .2s ease, transform .24s cubic-bezier(.2,.8,.2,1); }
+  .sw.open{ opacity:1; transform:none; }
+  .sw[hidden]{ display:none !important; }
+  .sw-bar{ flex:0 0 auto; display:flex; align-items:center; gap:12px 22px; padding:14px 26px; color:#fff;
+    background:linear-gradient(135deg,#1D3450 0%,#2C4A6E 62%,#1E6B67 150%); box-shadow:0 6px 22px -10px rgba(0,0,0,.45); position:relative; z-index:1; }
+  .sw-brand{ display:flex; align-items:center; gap:13px; min-width:0; flex:1 1 auto; }
+  .sw-ic{ width:42px; height:42px; border-radius:13px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); display:grid; place-items:center; flex:0 0 auto; }
+  .sw-brand h2{ margin:0; font-family:'Fraunces',serif; font-weight:600; font-size:23px; line-height:1.15; }
+  .sw-sub{ font-size:12.5px; color:#C9D6E3; margin-top:2px; }
+  .sw-keys{ font-size:12px; color:#C9D6E3; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .sw-keys kbd{ font:600 11px 'JetBrains Mono',monospace; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.26); border-radius:6px; padding:1px 6px; color:#fff; }
+  .sw-actions{ display:flex; gap:10px; align-items:center; flex:0 0 auto; }
+  .sw-link{ color:#fff; font:600 13px 'Inter',sans-serif; text-decoration:none; border:1px solid rgba(255,255,255,.3); border-radius:11px; padding:0 14px; height:40px; display:inline-flex; align-items:center; background:rgba(255,255,255,.08); }
+  .sw-link:hover{ background:rgba(255,255,255,.18); }
+  .sw-close{ border:0; background:#fff; color:var(--brand-deep); font:700 14px 'Inter',sans-serif; height:40px; padding:0 16px; border-radius:11px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+  .sw-close:hover{ background:#E8EEF3; }
+  .sw-body{ flex:1 1 auto; overflow-y:auto; padding:28px 26px 90px; overscroll-behavior:contain; }
+  .sw-body .srch{ max-width:1100px; margin:0 auto; }
+  .sw .srch-bar{ min-height:68px; border-radius:18px; } .sw #srchInput{ font-size:20px; }
+  .toast{ z-index:90; }
+  @media (max-width:900px){ .sw-keys{ display:none; } }
+  @media (max-width:720px){
+    .sw-bar{ padding:12px 14px; gap:10px; } .sw-brand h2{ font-size:19px; } .sw-ic{ width:38px; height:38px; }
+    .sw-link{ display:none; } .sw-close{ height:44px; padding:0 14px; } .sw-body{ padding:16px 12px 90px; }
+    .search-open-btn{ height:48px; width:100%; justify-content:center; font-size:15px; } .search-open-btn kbd{ display:none; }
+    .sw .srch-bar{ min-height:60px; }
+  }
+  @media (prefers-reduced-motion:reduce){ .sw{ transition:none !important; } }
   /* ====================== Restaurant search ====================== */
   .srch{ margin:0 0 22px; }
   /* the browser's own [hidden] rule loses to any display: set below, so state it explicitly for everything we hide */
@@ -1078,6 +1122,10 @@
   .srch-chip:hover{ background:var(--brand-tint); border-color:#C9D6E3; } .srch-chip:active{ transform:translateY(1px); }
   .srch-chip.on{ background:var(--brand); color:#fff; border-color:var(--brand); }
   .srch-chip .cdot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+  .srch-tips{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:22px; }
+  .srch-tips .tip{ display:flex; gap:13px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:14px; padding:15px 16px; }
+  .srch-tips .ti{ flex:0 0 auto; width:40px; height:40px; border-radius:12px; background:var(--brand-tint); display:grid; place-items:center; font-size:19px; }
+  .srch-tips b{ font-size:14.5px; color:var(--ink); } .srch-tips p{ margin:4px 0 0; font-size:13px; line-height:1.5; color:var(--ink-soft); }
   .srch-panel{ margin-top:18px; animation:srchIn .25s ease; }
   @keyframes srchIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
   .srch-sum{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
@@ -1133,9 +1181,9 @@
   @keyframes skel{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
   /* ---------- restaurant profile (slide-in) ---------- */
   html.rp-lock{ overflow:hidden; }
-  .rp-backdrop{ position:fixed; inset:0; background:rgba(33,30,26,.46); z-index:60; opacity:0; transition:opacity .22s ease; }
+  .rp-backdrop{ position:fixed; inset:0; background:rgba(33,30,26,.46); z-index:80; opacity:0; transition:opacity .22s ease; }
   .rp-backdrop.open{ opacity:1; }
-  .rp{ position:fixed; top:0; right:0; bottom:0; width:min(500px,100vw); background:var(--paper); z-index:61; transform:translateX(102%); transition:transform .3s cubic-bezier(.2,.8,.2,1); overflow-y:auto; box-shadow:-24px 0 60px rgba(0,0,0,.25); overscroll-behavior:contain; }
+  .rp{ position:fixed; top:0; right:0; bottom:0; width:min(500px,100vw); background:var(--paper); z-index:81; transform:translateX(102%); transition:transform .3s cubic-bezier(.2,.8,.2,1); overflow-y:auto; box-shadow:-24px 0 60px rgba(0,0,0,.25); overscroll-behavior:contain; }
   .rp.open{ transform:none; }
   .rp-head{ position:relative; padding:22px 22px 18px; background:linear-gradient(135deg,#1D3450 0%,#2C4A6E 60%,#1E6B67 140%); color:#fff; }
   .rp-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:14px; }
@@ -1172,6 +1220,7 @@
   .rp-foot .btn.primary{ background:var(--brand); color:#fff; border-color:var(--brand); }
   .rp-foot .btn:hover{ filter:brightness(.96); }
   @media (max-width:720px){
+    .srch-tips{ grid-template-columns:1fr; gap:10px; margin-top:16px; }
     .srch-hero{ padding:20px 16px 18px; border-radius:16px; }
     .srch-keys{ display:none; }
     .srch-bar{ padding-left:14px; min-height:56px; } #srchInput{ font-size:16px; }
@@ -1504,6 +1553,10 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button type="button" id="openSearch" class="search-open-btn" aria-haspopup="dialog" aria-controls="sw" title="Search any restaurant in the whole survey  (shortcut: /)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <span>Search restaurants</span><kbd aria-hidden="true">/</kbd>
+      </button>
       <select id="companySelect" class="secondary-btn" style="display:none;"></select>
       <div class="data-through" id="dataThrough" style="display:none;"></div>
       <div class="status">
@@ -1513,41 +1566,6 @@
       <button type="button" id="refreshBtn" class="secondary-btn" title="Fetch the newest data from the sheet right now">↻ Refresh data</button>
     </div>
   </header>
-
-  <!-- ===================== RESTAURANT SEARCH ===================== -->
-  <section class="srch" id="srch" aria-label="Restaurant search">
-    <div class="srch-hero">
-      <div class="srch-head">
-        <div class="srch-title">
-          <span class="srch-title-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
-          <span>Restaurant search</span>
-          <span class="srch-sub" id="srchSub">across the entire survey</span>
-        </div>
-        <div class="srch-keys" aria-hidden="true"><kbd>/</kbd> search <span>·</span> <kbd>↑</kbd><kbd>↓</kbd> move <span>·</span> <kbd>Enter</kbd> open <span>·</span> <kbd>Esc</kbd> close</div>
-      </div>
-      <div class="srch-bar" role="search">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="srchInput" type="text" role="combobox" aria-expanded="false" aria-controls="srchList" aria-autocomplete="list" aria-label="Search restaurants" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="80" placeholder="Type a restaurant name — e.g. “Hunger N Hunt” or “Sagar Mumbai”">
-        <span class="srch-spin" id="srchSpin" hidden aria-hidden="true"></span>
-        <button type="button" id="srchClear" class="srch-clear" aria-label="Clear search" hidden>✕</button>
-        <button type="button" id="srchGo" class="srch-go">Search</button>
-      </div>
-      <div class="srch-status" id="srchStatus" role="status" aria-live="polite"></div>
-      <div class="srch-suggest" id="srchSuggest"></div>
-      <div class="srch-panel" id="srchPanel" hidden>
-        <div class="srch-summary" id="srchSummary"></div>
-        <div class="srch-filters" id="srchFilters"></div>
-        <div class="srch-resultbar" id="srchResultBar"></div>
-        <div class="srch-list" id="srchList" role="listbox" aria-label="Matching restaurants"></div>
-        <div class="srch-more" id="srchMore"></div>
-      </div>
-    </div>
-  </section>
-
-  <div class="rp-backdrop" id="rpBackdrop" hidden></div>
-  <aside class="rp" id="rp" role="dialog" aria-modal="true" aria-labelledby="rpTitle" aria-hidden="true" hidden>
-    <div class="rp-inner" id="rpInner"></div>
-  </aside>
 
   <div class="quick-access-card" id="quickAccessCard">
     <div class="quick-access-tabs">
@@ -1696,6 +1714,54 @@
   </footer>
 
 </div>
+
+<!-- ===================== DEDICATED SEARCH WINDOW ===================== -->
+<div class="sw" id="sw" role="dialog" aria-modal="true" aria-labelledby="swTitle" hidden>
+  <div class="sw-bar">
+    <div class="sw-brand">
+      <span class="sw-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+      <div><h2 id="swTitle">Restaurant search</h2><div class="sw-sub" id="srchSub">across the entire survey</div></div>
+    </div>
+    <div class="sw-keys" aria-hidden="true"><kbd>↑</kbd><kbd>↓</kbd> move <span>·</span> <kbd>Enter</kbd> open <span>·</span> <kbd>Esc</kbd> close</div>
+    <div class="sw-actions">
+      <a id="swNewTab" class="sw-link" href="#search" target="_blank" rel="noopener">Open in new tab ↗</a>
+      <button type="button" id="swClose" class="sw-close" aria-label="Close search and return to the dashboard">✕ <span>Close</span></button>
+    </div>
+  </div>
+  <div class="sw-body" id="swBody">
+    <section class="srch" id="srch" aria-label="Restaurant search">
+      <div class="srch-hero">
+        <div class="srch-bar" role="search">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="srchInput" type="text" role="combobox" aria-expanded="false" aria-controls="srchList" aria-autocomplete="list" aria-label="Search restaurants" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="80" placeholder="Type a restaurant name — e.g. “Hunger N Hunt” or “Sagar Mumbai”">
+          <span class="srch-spin" id="srchSpin" hidden aria-hidden="true"></span>
+          <button type="button" id="srchClear" class="srch-clear" aria-label="Clear search" hidden>✕</button>
+          <button type="button" id="srchGo" class="srch-go">Search</button>
+        </div>
+        <div class="srch-status" id="srchStatus" role="status" aria-live="polite"></div>
+        <div class="srch-suggest" id="srchSuggest"></div>
+        <div class="srch-tips" id="srchTips">
+          <div class="tip"><span class="ti" aria-hidden="true">🔎</span><div><b>Search by name</b><p>Type any part of a restaurant name — “Hunger”, “Sagar Ratna”. Small spelling mistakes are fine.</p></div></div>
+          <div class="tip"><span class="ti" aria-hidden="true">📍</span><div><b>Add a city</b><p>Narrow it down with a city — “Sagar Pune” — or use the filters after you search.</p></div></div>
+          <div class="tip"><span class="ti" aria-hidden="true">📋</span><div><b>Click a restaurant</b><p>See its address, survey answers, software, and whether it was surveyed more than once.</p></div></div>
+        </div>
+        <div class="srch-panel" id="srchPanel" hidden>
+          <div class="srch-summary" id="srchSummary"></div>
+          <div class="srch-filters" id="srchFilters"></div>
+          <div class="srch-resultbar" id="srchResultBar"></div>
+          <div class="srch-list" id="srchList" role="listbox" aria-label="Matching restaurants"></div>
+          <div class="srch-more" id="srchMore"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="rp-backdrop" id="rpBackdrop" hidden></div>
+<aside class="rp" id="rp" role="dialog" aria-modal="true" aria-labelledby="rpTitle" aria-hidden="true" hidden>
+  <div class="rp-inner" id="rpInner"></div>
+</aside>
+
 
 <script>
 // ---------------------------------------------------------------------------
@@ -3938,7 +4004,9 @@ function srchRender(){
   const hasQ = SRCH.tokens.length > 0, hasF = srchHasFilters();
   srchEl('srchClear').hidden = !(SRCH.q || hasF);
   srchUpdateStatus();
-  if(!hasQ && !hasF){ panel.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); sugg.hidden = false; srchRenderSuggest(); return; }
+  const tips = srchEl('srchTips');
+  if(!hasQ && !hasF){ panel.hidden = true; if(tips) tips.hidden = false; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); sugg.hidden = false; srchRenderSuggest(); return; }
+  if(tips) tips.hidden = true;
   sugg.hidden = true; panel.hidden = false; input.setAttribute('aria-expanded', 'true');
   list.classList.remove('is-empty');
   if(!SRCH.idx || !srchNamesReady() || !CURRENT_SURVEY.length){
@@ -3988,6 +4056,7 @@ function srchResetFilters(){ SRCH.city = SRCH.status = SRCH.bucket = SRCH.sw = S
 function srchDataChanged(){
   clearTimeout(SRCH.preTimer); SRCH.idx = null; srchCloseProfile(true);
   srchUpdateStatus();
+  if(SW.open) srchWarm();
   if(SRCH.tokens.length || srchHasFilters()) srchSchedule(0); else if(srchNamesReady()) srchPrebuild();
 }
 function srchNamesProgress(){ srchUpdateStatus(); }
@@ -4035,6 +4104,7 @@ function srchProfileHTML(i){
       <div class="rp-status ${banner[0]}"><div class="ic" aria-hidden="true">${banner[1]}</div><div><h4>${banner[2]}</h4><p>${banner[3]}</p></div></div>
       <div class="rp-h">Survey collection summary</div>
       <div class="rp-grid">
+        <div class="rp-fact wide" id="rpAddr">${srchAddrFactHTML(i)}</div>
         <div class="rp-fact wide"><div class="k">Billing software</div><div class="v"><i style="background:${METRIC_COLORS[bucket]}"></i>${esc(srchSwText(r))} <small>${BUCKET_LABEL[bucket]}</small></div></div>
         <div class="rp-fact"><div class="k">Zomato</div><div class="v">${esc(srchPlatText(r['Zomato Live']))}</div></div>
         <div class="rp-fact"><div class="k">Swiggy</div><div class="v">${esc(srchPlatText(r['Swiggy Live']))}</div></div>
@@ -4047,7 +4117,8 @@ function srchProfileHTML(i){
 }
 function srchSummaryText(i){
   const idx = SRCH.idx, r = idx.rows[i], row = srchSheetRow(i), st = srchStatusOf(r);
-  return [`${srchRowName(r) || '(no name recorded)'} — ${idx.cityOf[i]}`, `Status: ${st === 'yes' ? 'Available' : st === 'no' ? 'Not available' : 'No answer'}`,
+  const ad = srchAddress(i);
+  return [`${srchRowName(r) || '(no name recorded)'} — ${idx.cityOf[i]}`, ad.state === 'ok' && ad.text ? `Address: ${ad.text}` : null, `Status: ${st === 'yes' ? 'Available' : st === 'no' ? 'Not available' : 'No answer'}`,
     `Billing software: ${srchSwText(r)} (${BUCKET_LABEL[classifySoftware(r['Ex Software'])]})`, `Zomato: ${srchPlatText(r['Zomato Live'])} · Swiggy: ${srchPlatText(r['Swiggy Live'])}`,
     `Surveyed: ${srchDateText(idx.dayOf[i])}`, row ? `Sheet row: ${row}` : null].filter(Boolean).join('\n');
 }
@@ -4087,18 +4158,138 @@ function srchCopyFallback(text, ok){
 }
 
 // ---------------------------------------------------------------- wiring
+// ---------------------------------------------------------------- restaurant ADDRESSES (loaded in small chunks, like the names)
+let ADDR_PARTS = [], ADDR_BUSY = new Map(), ADDR_ERR = new Map();
+function addrReset(){ ADDR_PARTS = []; ADDR_BUSY = new Map(); ADDR_ERR = new Map(); }
+const SRCH_ADDR_RE = /address|^res(taurant)?[ _-]?ar(ea)?$|^area$|locality|location/i;
+const SRCH_ADDR_BAD = /e-?mail|\bip\b|url|website|\bmac\b|owner|employee|surveyor|agent|home|residen|permanent|contact/i;
+function srchAddrRank(l){ const t = String(l).toLowerCase().replace(/\s+/g, ' ').trim(); if(/^res(taurant)?[ _-]?address$/.test(t)) return 0; if(/address/.test(t)) return 1; if(/^res(taurant)?[ _-]?ar(ea)?$/.test(t)) return 2; return 3; }
+let SRCH_LEGACY_ADDR = { rows: null, keys: [] };
+function srchLegacyAddrKeys(){                                   // direct-mode rows carry every column: pick the address column(s) from the headers
+  if(SRCH_LEGACY_ADDR.rows === CURRENT_SURVEY) return SRCH_LEGACY_ADDR.keys;
+  const r0 = CURRENT_SURVEY[0];
+  const keys = r0 ? Object.keys(r0).filter(k => SRCH_ADDR_RE.test(k) && !SRCH_ADDR_BAD.test(k)).sort((a, b) => srchAddrRank(a) - srchAddrRank(b)) : [];
+  SRCH_LEGACY_ADDR = { rows: CURRENT_SURVEY, keys };
+  return keys;
+}
+// -> { state: 'ok' | 'loading' | 'error' | 'none', text }
+function srchAddress(i){
+  const P = LAST_PAYLOAD;
+  if(P){
+    const a = P.addr;
+    if(!a) return { state: 'none', text: '' };
+    const k = Math.floor(i / a.chunk), part = ADDR_PARTS[k];
+    if(part) return { state: 'ok', text: part[i - k * a.chunk] || '' };
+    if(ADDR_ERR.has(k)) return { state: 'error', text: '' };
+    srchLoadAddrPart(k);
+    return { state: 'loading', text: '' };
+  }
+  const keys = srchLegacyAddrKeys(), r = CURRENT_SURVEY[i];
+  if(!keys.length || !r) return { state: 'none', text: '' };
+  for(const key of keys){ const v = String(r[key] == null ? '' : r[key]).replace(/\s+/g, ' ').trim(); if(v) return { state: 'ok', text: v }; }
+  return { state: 'ok', text: '' };
+}
+function srchLoadAddrPart(k){
+  const P = LAST_PAYLOAD;
+  if(!P || !P.addr || ADDR_PARTS[k]) return null;
+  if(ADDR_BUSY.has(k)) return ADDR_BUSY.get(k);
+  const v = P.v, h = (P.addr.hashes || [])[k], key = `addr:${COMPANY}:${k}`;
+  const pr = (async () => {
+    if(h){ const hit = await idbGet(key); if(hit && hit.h === h && Array.isArray(hit.addrs)) return hit.addrs; }     // unchanged chunk we already hold: no download
+    const r = await fetch(`${DATA_URL}?company=${encodeURIComponent(COMPANY)}&addr=1&part=${k}&v=${v}`);
+    if(r.status === 409) throw new Error('stale');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if(h) idbSet(key, { h, addrs: j.addrs });
+    return j.addrs;
+  })().then(arr => {
+    if(LAST_PAYLOAD && LAST_PAYLOAD.v === v){ ADDR_PARTS[k] = arr; ADDR_ERR.delete(k); }
+  }, err => {
+    if(LAST_PAYLOAD && LAST_PAYLOAD.v === v){
+      if(err && err.message === 'stale'){ FORCE_FRESH = true; setTimeout(() => loadAll(true), 0); }                 // the server has newer data: refresh once
+      else ADDR_ERR.set(k, err && err.message || 'error');
+    }
+  }).then(() => { ADDR_BUSY.delete(k); srchRefreshProfile(); });
+  ADDR_BUSY.set(k, pr);
+  return pr;
+}
+function srchWarmAddrs(){                                        // fetch every address chunk in the background (skipped on slow / data-saver connections: they load on demand)
+  const P = LAST_PAYLOAD;
+  if(!P || !P.addr) return;
+  const c = navigator.connection;
+  if(c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''))) return;
+  for(let k = 0; k < P.addr.parts; k++) srchLoadAddrPart(k);
+}
+function srchAddrFactHTML(i){
+  const a = srchAddress(i), idx = SRCH.idx;
+  let body;
+  if(a.state === 'ok' && a.text){
+    const q = [srchRowName(idx.rows[i]), a.text, idx.cityOf[i]].filter(Boolean).join(', ');
+    body = `<span class="addr-text">${esc(a.text)}</span><br><a class="rp-map" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener">📍 View on map ↗</a>`;
+  } else if(a.state === 'ok' || a.state === 'none') body = '<small>No address recorded for this restaurant.</small>';
+  else if(a.state === 'error') body = `<small class="addr-err">Couldn’t load the address.</small><button type="button" class="rp-retry" data-addr-retry="${i}">Try again</button>`;
+  else body = '<span class="addr-skel" aria-hidden="true"></span><small>Loading address…</small>';
+  return `<div class="k">Address</div><div class="v addr">${body}</div>`;
+}
+function srchRefreshProfile(){                                   // update only the address card (so nothing the person is doing is disturbed)
+  if(!SW.open || SRCH.profileI < 0 || !SRCH.idx) return;
+  const el = srchEl('rpAddr');
+  if(el) el.innerHTML = srchAddrFactHTML(SRCH.profileI);
+}
+
+// ---------------------------------------------------------------- the dedicated search window
+const SW = { open: false, lastFocus: null, pushed: false, closeTimer: null };
+function srchWarm(){                                             // start loading names (and addresses) the moment the window opens
+  if(!CURRENT_SURVEY.length) return;
+  if(!srchNamesReady()) ensureNames();
+  srchUpdateStatus();
+  srchWarmAddrs();
+}
+function srchOpenWindow(fromHash){
+  const w = srchEl('sw'), input = srchEl('srchInput');
+  clearTimeout(SW.closeTimer);
+  if(SW.open){ input.focus(); return; }
+  SW.open = true; SW.lastFocus = document.activeElement;
+  srchEl('swNewTab').href = location.pathname + location.search + '#search';
+  w.hidden = false; void w.offsetWidth; w.classList.add('open');
+  document.documentElement.classList.add('sw-lock');
+  const root = document.querySelector('.wrap'); if(root){ root.setAttribute('inert', ''); root.setAttribute('aria-hidden', 'true'); }
+  SW.pushed = false;
+  if(!fromHash){ try{ history.pushState({ sw: 1 }, '', '#search'); SW.pushed = true; }catch(e){} }   // so the browser's Back button closes the window
+  srchWarm(); srchRender();
+  srchEl('swBody').scrollTop = 0;
+  input.focus();
+}
+function srchCloseWindow(fromHash){
+  if(!SW.open) return;
+  srchCloseProfile(true);
+  SW.open = false;
+  const w = srchEl('sw'); w.classList.remove('open');
+  document.documentElement.classList.remove('sw-lock');
+  const root = document.querySelector('.wrap'); if(root){ root.removeAttribute('inert'); root.removeAttribute('aria-hidden'); }
+  SW.closeTimer = setTimeout(() => { if(!SW.open) w.hidden = true; }, 260);
+  if(!fromHash){
+    try{
+      if(SW.pushed){ SW.pushed = false; history.back(); }                                              // undo the entry we added
+      else if(location.hash === '#search') history.replaceState(null, '', location.pathname + location.search);   // opened from a link: just drop the "#search"
+    }catch(e){}
+  }
+  const f = SW.lastFocus; SW.lastFocus = null;
+  if(f && f.focus && document.contains(f)) f.focus();
+}
+
 function srchInit(){
   const input = srchEl('srchInput');
   if(!input) return;
   try{ SRCH.recent = (JSON.parse(localStorage.getItem('srchRecentV1') || '[]') || []).filter(x => typeof x === 'string').slice(0, 6); }catch(e){ SRCH.recent = []; }
-  const warm = () => { if(CURRENT_SURVEY.length && !srchNamesReady()){ ensureNames(); srchUpdateStatus(); } };
+  const warm = srchWarm;
   input.addEventListener('focus', warm);
   input.addEventListener('input', () => { SRCH.q = input.value; srchEl('srchClear').hidden = !(SRCH.q || srchHasFilters()); warm(); srchSchedule(110); });
   input.addEventListener('keydown', e => {
     if(e.key === 'ArrowDown'){ e.preventDefault(); srchMove(1); }
     else if(e.key === 'ArrowUp'){ e.preventDefault(); srchMove(-1); }
     else if(e.key === 'Enter'){ e.preventDefault(); if(SRCH.active >= 0 && SRCH.order[SRCH.active] !== undefined) srchOpenProfile(SRCH.order[SRCH.active]); else { srchRun(); srchRemember(SRCH.q); } }
-    else if(e.key === 'Escape'){ if(SRCH.profileI >= 0) srchCloseProfile(); else if(SRCH.q || srchHasFilters()){ SRCH.q = ''; input.value = ''; srchResetFilters(); srchRun(); } else input.blur(); }
+    else if(e.key === 'Escape'){ e.stopPropagation(); if(SRCH.profileI >= 0) srchCloseProfile(); else if(SRCH.q || srchHasFilters()){ SRCH.q = ''; input.value = ''; srchResetFilters(); srchRun(); } else srchCloseWindow(); }
   });
   srchEl('srchGo').addEventListener('click', () => { warm(); srchRun(); srchRemember(SRCH.q); input.focus(); });
   srchEl('srchClear').addEventListener('click', () => { SRCH.q = ''; input.value = ''; srchResetFilters(); srchRun(); input.focus(); });
@@ -4122,13 +4313,14 @@ function srchInit(){
   });
   const rp = srchEl('rp');
   rp.addEventListener('click', e => {
-    const t = e.target.closest('[data-close],[data-nav],[data-open],[data-copy],[data-city]');
+    const t = e.target.closest('[data-close],[data-nav],[data-open],[data-copy],[data-city],[data-addr-retry]');
     if(!t) return;
     if(t.dataset.close !== undefined) srchCloseProfile();
     else if(t.dataset.nav){ const pos = SRCH.order.indexOf(SRCH.profileI) + (+t.dataset.nav); if(SRCH.order[pos] !== undefined) srchOpenProfile(SRCH.order[pos]); }
     else if(t.dataset.open !== undefined){ if(+t.dataset.open !== SRCH.profileI) srchOpenProfile(+t.dataset.open); }
     else if(t.dataset.copy !== undefined) srchCopy(srchSummaryText(+t.dataset.copy));
-    else if(t.dataset.city !== undefined){ const c = t.dataset.city; srchCloseProfile(); srchResetFilters(); SRCH.city = c; SRCH.q = ''; input.value = ''; srchRun(); srchEl('srch').scrollIntoView && srchEl('srch').scrollIntoView({ block:'start' }); }
+    else if(t.dataset.addrRetry !== undefined){ const a = LAST_PAYLOAD && LAST_PAYLOAD.addr; if(a){ ADDR_ERR.delete(Math.floor(+t.dataset.addrRetry / a.chunk)); srchRefreshProfile(); } }
+    else if(t.dataset.city !== undefined){ const c = t.dataset.city; srchCloseProfile(); srchResetFilters(); SRCH.city = c; SRCH.q = ''; input.value = ''; srchRun(); srchEl('swBody').scrollTop = 0; input.focus(); }
   });
   rp.addEventListener('keydown', e => {
     if(e.key === 'Escape'){ e.stopPropagation(); srchCloseProfile(); }
@@ -4138,10 +4330,20 @@ function srchInit(){
   srchEl('rpBackdrop').addEventListener('click', () => srchCloseProfile());
   document.addEventListener('keydown', e => {
     const tg = e.target, typing = tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' || tg.isContentEditable);
-    if((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')){ e.preventDefault(); input.focus(); input.select(); }
-    else if(e.key === 'Escape' && SRCH.profileI >= 0 && !srchEl('rp').contains(tg)) srchCloseProfile();
+    if((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')){
+      e.preventDefault();
+      if(!SW.open) srchOpenWindow(); else { input.focus(); input.select(); }
+    }
+    else if(e.key === 'Escape'){
+      if(SRCH.profileI >= 0 && !srchEl('rp').contains(tg)) srchCloseProfile();
+      else if(SW.open && SRCH.profileI < 0) srchCloseWindow();
+    }
   });
+  srchEl('openSearch').addEventListener('click', () => srchOpenWindow());
+  srchEl('swClose').addEventListener('click', () => srchCloseWindow());
+  window.addEventListener('hashchange', () => { if(location.hash === '#search'){ if(!SW.open) srchOpenWindow(true); } else if(SW.open) srchCloseWindow(true); });
   srchRenderSuggest(); srchUpdateStatus();
+  if(location.hash === '#search') srchOpenWindow(true);          // a link / new tab that points straight at the search
 }
 
 const _tick = () => new Promise(r => setTimeout(r, 0));
@@ -4269,7 +4471,7 @@ async function loadDirect(){
   }
   if(!survey.length && COMPANY.toUpperCase() === 'ALL') throw new Error(ZERO_SURVEY_MSG);
   renderWarnings([]);
-  LAST_PAYLOAD = null; LOADED_V = null; NAMES = null; SHEET_COLUMNS = null;
+  LAST_PAYLOAD = null; LOADED_V = null; NAMES = null; SHEET_COLUMNS = null; addrReset();
   detectDateOrder(survey);
   await renderAll(survey, rest);
   LAST_OK_AT = Date.now();
@@ -4359,7 +4561,7 @@ async function loadAll(isManual){
       }
       setDateOrder(d.dateOrder);
       if(COMPANY.toUpperCase() === 'ALL') populateCompanySelectFrom(new Set(d.companies));
-      if(LAST_PAYLOAD && LAST_PAYLOAD.v !== p.v){ NAMES = null; NAMES_PROMISE = null; NAMES_FAILED = false; }
+      if(LAST_PAYLOAD && LAST_PAYLOAD.v !== p.v){ NAMES = null; NAMES_PROMISE = null; NAMES_FAILED = false; addrReset(); }
       LAST_PAYLOAD = p; LOADED_V = p.v; SHEET_COLUMNS = p.sheetColumns || null;
       await renderAll(d.survey, d.rest);
       idbSet('data:' + COMPANY, { text, savedAt: Date.now() });
